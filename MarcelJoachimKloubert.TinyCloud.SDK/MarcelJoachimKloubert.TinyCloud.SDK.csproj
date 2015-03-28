@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{695EAA2A-5C95-4A1E-866A-0462D4823E7F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MarcelJoachimKloubert.TinyCloud.SDK</RootNamespace>
+    <AssemblyName>MarcelJoachimKloubert.TinyCloud.SDK</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>MarcelJoachimKloubert.TinyCloud.SDK.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\_Libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppServices.cs" />
+    <Compile Include="CloudConnection.cs" />
+    <Compile Include="CloudDisposableBase.cs" />
+    <Compile Include="CloudObjectBase.cs" />
+    <Compile Include="Extensions\Encryption.cs" />
+    <Compile Include="Extensions\Values.cs" />
+    <Compile Include="Extensions\Web.cs" />
+    <Compile Include="Handlers\Http\HttpHandlerBase.CloudIdentity.cs">
+      <DependentUpon>HttpHandlerBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Handlers\Http\HttpHandlerBase.CloudPrincipal.cs">
+      <DependentUpon>HttpHandlerBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Handlers\Http\HttpHandlerBase.cs" />
+    <Compile Include="Handlers\Http\HttpHandlerBase._HttpRequest.cs">
+      <DependentUpon>HttpHandlerBase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Handlers\Http\IHttpRequest.cs" />
+    <Compile Include="Handlers\Http\JsonHttpHandlerBase.cs" />
+    <Compile Include="Helpers\CryptoHelper.cs" />
+    <Compile Include="ICloudDisposable.cs" />
+    <Compile Include="ICloudObject.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Security\ICloudIdentity.cs" />
+    <Compile Include="Security\ICloudPrincipal.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="LICENSE" />
+    <None Include="MarcelJoachimKloubert.TinyCloud.SDK.snk" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
