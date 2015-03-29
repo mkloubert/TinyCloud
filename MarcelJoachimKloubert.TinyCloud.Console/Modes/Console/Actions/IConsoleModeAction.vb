@@ -17,41 +17,33 @@
 Imports MarcelJoachimKloubert.TinyCloud.SDK
 
 ''' <summary>
-''' A basic mode.
+''' Describes an action for a <see cref="ConsoleMode" /> instance.
 ''' </summary>
-Public MustInherit Class ModeBase : Inherits CloudDisposableBase : Implements IMode
+Public Interface IConsoleModeAction : Inherits ICloudObject
 
-#Region "Constructors (2)"
+#Region "Properties (2)"
 
-    ''' <inheriteddoc />
-    Protected Sub New()
-        MyBase.New()
-    End Sub
+    ''' <summary>
+    ''' Gets the underlying mode instance.
+    ''' </summary>
+    ReadOnly Property Mode As ConsoleMode
 
-    ''' <inheriteddoc />
-    Protected Sub New(sync As Object)
-        MyBase.New(sync)
-    End Sub
+    ''' <summary>
+    ''' Gets the names of the action.
+    ''' </summary>
+    ReadOnly Property Names As IEnumerable(Of String)
 
 #End Region
 
-#Region "Methods (2)"
+#Region "Methods (1)"
 
     ''' <summary>
-    ''' <see cref="IMode.Run" />
+    ''' Executes the action.
     ''' </summary>
-    Public MustOverride Sub Run() Implements IMode.Run
-
-    ''' <summary>
-    ''' Stores the logic for the <see cref="ModeBase.Dispose" /> method and the finalizer.
-    ''' </summary>
-    ''' <param name="disposing">
-    ''' <see cref="ModeBase.Dispose" /> or <see cref="ModeBase.Finalize" /> method was called.
-    ''' </param>
-    Protected Overrides Sub OnDispose(disposing As Boolean)
-        '' dummy
-    End Sub
+    ''' <param name="conn">The underlying connection.</param>
+    ''' <param name="args">The arguments for the action.</param>
+    Sub Execute(conn As CloudConnection, args As IList(Of String))
 
 #End Region
 
-End Class
+End Interface

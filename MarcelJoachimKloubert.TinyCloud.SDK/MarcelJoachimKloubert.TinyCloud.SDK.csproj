@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="AppServices.cs" />
     <Compile Include="CloudConnection.cs" />
+    <Compile Include="CloudConnectionObjectBase.cs" />
     <Compile Include="CloudDisposableBase.cs" />
     <Compile Include="CloudObjectBase.cs" />
     <Compile Include="Extensions\Encryption.cs" />

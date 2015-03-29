@@ -1,7 +1,26 @@
-﻿Imports System.Text.RegularExpressions
+﻿''  TinyCloud Console (https://github.com/mkloubert/TinyCloud)
+''  Copyright (C) 2015  Marcel Joachim Kloubert <marcel.kloubert@gmx.net>
+''
+''  This program is free software: you can redistribute it and/or modify
+''  it under the terms of the GNU Affero General Public License as
+''  published by the Free Software Foundation, either version 3 of the
+''  License, or (at your option) any later version.
+''
+''  This program is distributed in the hope that it will be useful,
+''  but WITHOUT ANY WARRANTY; without even the implied warranty of
+''  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+''  GNU Affero General Public License for more details.
+''
+''  You should have received a copy of the GNU Affero General Public License
+''  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Imports System.Text.RegularExpressions
 Imports MarcelJoachimKloubert.TinyCloud.SDK
 Imports MarcelJoachimKloubert.TinyCloud.SDK.Extensions
 Imports System.Net
+Imports System.ComponentModel.Composition.Hosting
+Imports System.Linq
+Imports System.ComponentModel.Composition
 
 ''' <summary>
 ''' Console mode.
@@ -12,12 +31,7 @@ Public NotInheritable Class ConsoleMode
 #Region "Fields (2)"
 
     Private ReadOnly _CONN As CloudConnection
-
-    ''' <summary>
-    ''' The regular expression to split command line arguments.
-    ''' </summary>
-    Public Shared REGEX_COMMAND_LINE_ARGUMENTS As Regex = New Regex("(?<quote>[" & Chr(34) & "]?)(?<param>(?:\k<quote>{2}|[^" & Chr(34) & "]+)*)\k<quote>[ ]+", _
-                                                                    (RegexOptions.ECMAScript Or RegexOptions.IgnoreCase) Or RegexOptions.Compiled)
+    Private ReadOnly _CONTAINER As CompositionContainer
 
 #End Region
 
@@ -28,20 +42,20 @@ Public NotInheritable Class ConsoleMode
     ''' </summary>
     Public Sub New()
         Me._CONN = AppSettings.CreateConnection()
+
+        Dim catalogs As AggregateCatalog = New AggregateCatalog()
+
+        Dim asmCatalog As AssemblyCatalog = New AssemblyCatalog(Me.GetType().Assembly)
+        catalogs.Catalogs.Add(asmCatalog)
+
+        Me._CONTAINER = New CompositionContainer(catalogs, isThreadSafe:=True)
+        Me._CONTAINER.ComposeExportedValue(Of ConsoleMode)(Me)
     End Sub
 
 #End Region
 
 #Region "Methods (5)"
 
-    ''' <summary>
-    ''' <see cref="ModeBase.OnDispose" />
-    ''' </summary>
-    Protected Overrides Sub OnDispose(disposing As Boolean)
-        If disposing Then
-            Me._CONN.Dispose()
-        End If
-    End Sub
 
     Private Shared Sub ExtractCommandLineArguments(input As String, ByRef cmd As String, ByRef args As IList(Of String))
         cmd = String.Empty
@@ -145,6 +159,16 @@ Public NotInheritable Class ConsoleMode
     End Sub
 
     ''' <summary>
+    ''' <see cref="ModeBase.OnDispose" />
+    ''' </summary>
+    Protected Overrides Sub OnDispose(disposing As Boolean)
+        If disposing Then
+            Me._CONN.Dispose()
+            Me._CONTAINER.Dispose()
+        End If
+    End Sub
+
+    ''' <summary>
     ''' <see cref="ModeBase.Run" />
     ''' </summary>
     Public Overrides Sub Run()
@@ -158,73 +182,54 @@ Public NotInheritable Class ConsoleMode
                     Continue While
                 End If
 
-                Dim action As Action(Of CloudConnection, IList(Of String)) = Nothing
-                Dim args As IList(Of String)
+                Dim args As IList(Of String) = Nothing
 
-                Dim cmd As String
+                Dim cmd As String = Nothing
                 ExtractCommandLineArguments(input, cmd, args)
 
-                Select Case cmd.ToLower().Trim()
-                    Case "cls"
-                        Global.System.Console.Clear()
-                        Continue While
+                If cmd IsNot Nothing Then
+                    cmd = cmd.ToLower().Trim()
+                End If
 
-                    Case "exit"
-                        Exit While
+                '' find action
+                Dim action As IConsoleModeAction = Me._CONTAINER _
+                                                     .GetExportedValues(Of Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction)() _
+                                                     .SingleOrDefault(Function(x)
+                                                                          Dim names As IEnumerable(Of String) = x.Names
+                                                                          If names Is Nothing Then
+                                                                              names = Enumerable.Empty(Of String)()
+                                                                          End If
 
-                    Case "hello"
-                        action = AddressOf Me.cmd_hello
-                        Exit Select
+                                                                          '' normalize
+                                                                          names = names.Where(Function(y) Not String.IsNullOrWhiteSpace(y)) _
+                                                                                       .Select(Function(y) y.ToLower().Trim())
 
-                    Case "test_args"
-                        action = AddressOf Me.cmd_testArgs
-                        Exit Select
-                End Select
+                                                                          Return names.Any(Function(y) y = cmd)
+                                                                      End Function)
 
                 If action IsNot Nothing Then
-                    action(Me._CONN, args)
+                    action.Execute(Me._CONN, args)
+                Else
+                    Select Case cmd
+                        Case "exit", "close"
+                            Exit While
+                    End Select
                 End If
             Catch ex As Exception
+                Dim innerEx As Exception = ex.GetBaseException()
+                If innerEx Is Nothing Then
+                    innerEx = ex
+                End If
 
+                ConsoleHelper.InvokeForColor(Sub()
+                                                 Global.System.Console.WriteLine()
+
+                                                 Global.System.Console.WriteLine(innerEx)
+
+                                                 Global.System.Console.WriteLine()
+                                             End Sub, foreColor:=ConsoleColor.Red)
             End Try
         End While
-    End Sub
-
-    Private Sub cmd_hello(conn As CloudConnection, args As IList(Of String))
-        Dim request As WebRequest = conn.CreateApiRequest("hello")
-        request.Method = "GET"
-
-        Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-        If response Is Nothing Then
-            Return
-        End If
-
-        Dim data As IDictionary(Of String, Object) = response("data")
-        If data Is Nothing Then
-            Return
-        End If
-
-        Global.System.Console.WriteLine()
-
-        If data.ContainsKey("version") Then
-            Global.System.Console.WriteLine("Version: {0}", data("version"))
-        End If
-
-        Global.System.Console.WriteLine()
-    End Sub
-
-    Private Sub cmd_testArgs(conn As CloudConnection, args As IList(Of String))
-        Global.System.Console.WriteLine()
-
-        For i = 1 To args.Count
-            Dim a As String = args(i - 1)
-
-            Global.System.Console.WriteLine("[{0}] => ""{1}"" ({2})", _
-                                            i - 1, _
-                                            a, a.Length)
-        Next
-
-        Global.System.Console.WriteLine()
     End Sub
 
 #End Region

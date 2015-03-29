@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 ' Die Werte der Assemblyattribute überprüfen
 
 <Assembly: AssemblyTitle("MarcelJoachimKloubert.TinyCloud.Console")> 
-<Assembly: AssemblyDescription("")> 
-<Assembly: AssemblyCompany("")> 
+<Assembly: AssemblyDescription("Console for TinyCloud")> 
+<Assembly: AssemblyCompany("Marcel Joachim Kloubert")> 
 <Assembly: AssemblyProduct("MarcelJoachimKloubert.TinyCloud.Console")> 
-<Assembly: AssemblyCopyright("Copyright ©  2015")> 
+<Assembly: AssemblyCopyright("Copyright ©  2015 Marcel Joachim Kloubert")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>

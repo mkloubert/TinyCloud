@@ -21,5 +21,18 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
     /// </summary>
     public interface ICloudObject
     {
+        #region Properties (2)
+
+        /// <summary>
+        /// Gets if that object is thread safe or not.
+        /// </summary>
+        bool IsSynchronized { get; }
+
+        /// <summary>
+        /// Gets the object for thread safe operations.
+        /// </summary>
+        object SyncRoot { get; }
+
+        #endregion Properties (2)
     }
 }

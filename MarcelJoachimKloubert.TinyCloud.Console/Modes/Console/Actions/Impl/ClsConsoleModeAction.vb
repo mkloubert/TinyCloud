@@ -14,42 +14,47 @@
 ''  You should have received a copy of the GNU Affero General Public License
 ''  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Imports System.ComponentModel.Composition
 Imports MarcelJoachimKloubert.TinyCloud.SDK
 
 ''' <summary>
-''' A basic mode.
+''' Action for clearing the console screen.
 ''' </summary>
-Public MustInherit Class ModeBase : Inherits CloudDisposableBase : Implements IMode
+<Export(GetType(Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction))>
+<PartCreationPolicy(CreationPolicy.NonShared)>
+Public NotInheritable Class ClsConsoleModeAction
+    Inherits ConsoleModeActionBase
 
-#Region "Constructors (2)"
-
-    ''' <inheriteddoc />
-    Protected Sub New()
-        MyBase.New()
-    End Sub
+#Region "Constructors (1)"
 
     ''' <inheriteddoc />
-    Protected Sub New(sync As Object)
-        MyBase.New(sync)
+    <ImportingConstructor>
+    Public Sub New(mode As ConsoleMode)
+        MyBase.New(mode)
     End Sub
 
 #End Region
 
-#Region "Methods (2)"
+#Region "Properties (1)"
 
     ''' <summary>
-    ''' <see cref="IMode.Run" />
+    ''' <see cref="ConsoleModeActionBase.Names" />
     ''' </summary>
-    Public MustOverride Sub Run() Implements IMode.Run
+    Public Overrides ReadOnly Property Names As IEnumerable(Of String)
+        Get
+            Return New String() {"cls"}
+        End Get
+    End Property
+
+#End Region
+
+#Region "Methods (1)"
 
     ''' <summary>
-    ''' Stores the logic for the <see cref="ModeBase.Dispose" /> method and the finalizer.
+    ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
-    ''' <param name="disposing">
-    ''' <see cref="ModeBase.Dispose" /> or <see cref="ModeBase.Finalize" /> method was called.
-    ''' </param>
-    Protected Overrides Sub OnDispose(disposing As Boolean)
-        '' dummy
+    Public Overrides Sub Execute(conn As CloudConnection, args As IList(Of String))
+        Global.System.Console.Clear()
     End Sub
 
 #End Region

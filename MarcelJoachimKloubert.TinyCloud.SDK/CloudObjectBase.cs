@@ -92,5 +92,21 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
         }
 
         #endregion Constructors (4)
+
+        #region Properties (2)
+
+        /// <inheriteddoc />
+        public bool IsSynchronized
+        {
+            get { return this._IS_SYNCHRONIZED; }
+        }
+
+        /// <inheriteddoc />
+        public object SyncRoot
+        {
+            get { return this._SYNC; }
+        }
+
+        #endregion Properties (2)
     }
 }

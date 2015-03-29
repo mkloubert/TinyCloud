@@ -71,6 +71,17 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
 
         #region Methods (2)
 
+        /// <summary>
+        /// Creates a new API request.
+        /// </summary>
+        /// <param name="action">The API action.</param>
+        /// <returns>The created request.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="action" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="action" /> is invalid.
+        /// </exception>
         public WebRequest CreateApiRequest(string action)
         {
             if (action == null)
