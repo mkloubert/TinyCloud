@@ -14,6 +14,7 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.IO;
 using System.IO;
 using System.Security.Principal;
 
@@ -24,7 +25,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Security
     /// </summary>
     public interface ICloudPrincipal : IPrincipal, ICloudObject
     {
-        #region Properties (2)
+        #region Properties (3)
+
+        /// <summary>
+        /// Gets the root directory of the user.
+        /// </summary>
+        IDirectory Directory { get; }
 
         /// <summary>
         /// <see cref="IPrincipal.Identity" />
@@ -36,9 +42,9 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Security
         /// </summary>
         bool IsSuperAdmin { get; }
 
-        #endregion Properties (1)
+        #endregion Properties (3)
 
-        #region Methods (3)
+        #region Methods (4)
 
         /// <summary>
         /// Decrypts data for that principal.
@@ -61,12 +67,18 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Security
         void Encrypt(Stream src, Stream dest);
 
         /// <summary>
+        /// Returns the root directory of the principal's data.
+        /// </summary>
+        /// <returns>The directory.</returns>
+        DirectoryInfo GetDataDirectory();
+
+        /// <summary>
         /// Checks if a resource is allowed.
         /// </summary>
         /// <param name="name">The name of the resource.</param>
         /// <returns>Is allowed or now.</returns>
         bool IsResourceAllowed(string name);
 
-        #endregion Methods (3)
+        #endregion Methods (4)
     }
 }

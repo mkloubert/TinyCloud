@@ -21,6 +21,7 @@ Imports System.Net
 Imports System.ComponentModel.Composition.Hosting
 Imports System.Linq
 Imports System.ComponentModel.Composition
+Imports SysConsole = System.Console
 
 ''' <summary>
 ''' Console mode.
@@ -54,8 +55,7 @@ Public NotInheritable Class ConsoleMode
 
 #End Region
 
-#Region "Methods (5)"
-
+#Region "Methods (4)"
 
     Private Shared Sub ExtractCommandLineArguments(input As String, ByRef cmd As String, ByRef args As IList(Of String))
         cmd = String.Empty
@@ -67,11 +67,23 @@ Public NotInheritable Class ConsoleMode
 
         input = input.TrimStart()
 
+        Const ENVELOP_CHAR As Char = Chr(34)
+        Const ESCAPE_CHAR As Char = "\"
+        Const TRIM_CHAR As Char = " "
+
         Dim isCmd As Boolean = True
         Dim isTrimming As Boolean = True
         Dim endChar As Char = " "
         Dim arg As String = String.Empty
         Dim charsToIgnore As Integer = 0
+
+        Dim nonRefArgs As IList(Of String) = args
+        Dim addArg As Action = Sub()
+                                   If Not String.IsNullOrEmpty(arg) Then
+                                       nonRefArgs.Add(arg)
+                                   End If
+                               End Sub
+
         For i = 1 To input.Length
             If charsToIgnore > 0 Then
                 charsToIgnore = charsToIgnore - 1
@@ -80,64 +92,118 @@ Public NotInheritable Class ConsoleMode
 
             Dim c As Char = input(i - 1)
 
-            If isCmd Then
-                '' command
+            Dim handleEscape As Func(Of String, String) = Function(initialResult)
+                                                              Dim nextChar As Char = input(i)
+                                                              Dim resultValue As String = initialResult
 
-                If c <> " " Then
-                    cmd = cmd & c
-                Else
-                    isTrimming = True
-                    isCmd = False
-                End If
-            Else
+                                                              If nextChar = endChar Or nextChar = ESCAPE_CHAR Then
+                                                                  charsToIgnore = 1
+
+                                                                  resultValue = nextChar
+                                                              Else
+                                                                  Dim simpleEscapeChars = New Dictionary(Of Char, String) From {{"n", vbLf}, _
+                                                                                                                                {"r", vbCr}, _
+                                                                                                                                {"t", vbTab}, _
+                                                                                                                                {"0", vbNullChar}, _
+                                                                                                                                {"b", vbBack}}
+
+                                                                  If simpleEscapeChars.ContainsKey(nextChar) Then
+                                                                      '' escape char
+
+                                                                      charsToIgnore = 1
+                                                                      resultValue = simpleEscapeChars(nextChar)
+                                                                  ElseIf nextChar = "u" Or nextChar = "x" Then
+                                                                      '' unicode char
+
+                                                                      charsToIgnore = 1
+
+                                                                      '' extract hex part
+                                                                      Dim hexStr As String = String.Empty
+                                                                      For ii As Integer = 1 To 4
+                                                                          Dim hexCharPos As Integer = i + ii
+                                                                          If hexCharPos >= input.Length Then
+                                                                              Exit For
+                                                                          End If
+
+                                                                          Dim hexChar = Char.ToLower(input(hexCharPos))
+                                                                          If (hexChar >= "0" AndAlso hexChar <= "9") Or _
+                                                                             (hexChar >= "a" AndAlso hexChar <= "f") Then
+
+                                                                              hexStr = hexStr & hexChar
+                                                                              charsToIgnore = charsToIgnore + 1
+                                                                          Else
+                                                                              '' no valid hex character
+                                                                              Exit For
+                                                                          End If
+                                                                      Next
+
+                                                                      resultValue = "\" & nextChar & hexStr
+
+                                                                      If nextChar = "x" Then
+                                                                          '' normalize
+                                                                          hexStr = hexStr.PadLeft(4, "0")
+                                                                      End If
+
+                                                                      If hexStr.Length = 4 Then
+                                                                          Dim charValue As UShort = UShort.Parse(hexStr, Global.System.Globalization.NumberStyles.HexNumber, AppServices.DataCulture)
+
+                                                                          resultValue = Convert.ChangeType(charValue, GetType(Char)) _
+                                                                                               .ToString()
+                                                                      End If
+                                                                  End If
+                                                              End If
+
+                                                              Return resultValue
+                                                          End Function
+
+            If Not isCmd Then
                 '' argument
 
                 If Not isTrimming Then
-                    Dim appendChar As Boolean = False
+                    Dim valueToAppend As String = String.Empty
 
-                    If c = "\" Then
+                    If c = ESCAPE_CHAR Then
                         '' escape
 
                         If i < input.Length Then
-                            charsToIgnore = 1
-
-                            arg = arg & input(i)
+                            valueToAppend = handleEscape(c)
                         Else
-                            appendChar = True
+                            valueToAppend = c
                         End If
                     ElseIf c = endChar Then
                         '' end char reached => add argument
 
                         isTrimming = True
 
-                        args.Add(arg)
+                        addArg()
                         arg = String.Empty
                     Else
-                        appendChar = True
+                        valueToAppend = c
                     End If
 
-                    If appendChar Then
-                        arg = arg & c
-                    End If
+                    arg = arg & valueToAppend
                 Else
                     '' leading whitespaces
 
-                    If c = " " Then
+                    If c = TRIM_CHAR Then
                         '' leading whitespace
                         Continue For
                     End If
 
                     isTrimming = False
 
-                    If c = "\" Then
+                    If c = ESCAPE_CHAR Then
                         '' escape
+                        endChar = TRIM_CHAR
+
+                        Dim initialArgValue As String = c
 
                         If i < input.Length Then
-                            Continue For
-                        Else
-                            arg = c
+                            initialArgValue = handleEscape(c)
                         End If
-                    ElseIf c = Chr(34) Then
+
+                        arg = initialArgValue
+                    ElseIf c = ENVELOP_CHAR Then
                         '' argument starts with "
 
                         endChar = c
@@ -145,18 +211,29 @@ Public NotInheritable Class ConsoleMode
                     Else
                         '' argument starts
 
-                        endChar = " "
+                        endChar = TRIM_CHAR
                         arg = c
                     End If
+                End If
+            Else
+                '' command
+
+                If c <> TRIM_CHAR Then
+                    cmd = cmd & c
+                Else
+                    isTrimming = True
+                    isCmd = False
                 End If
             End If
         Next
 
-        If Not String.IsNullOrEmpty(arg) Then
-            '' add last argument
-            args.Add(arg)
-        End If
+        addArg()
     End Sub
+
+    Private Function GetActions() As IEnumerable(Of IConsoleModeAction)
+        Return Me._CONTAINER _
+                 .GetExportedValues(Of Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction)()
+    End Function
 
     ''' <summary>
     ''' <see cref="ModeBase.OnDispose" />
@@ -174,10 +251,10 @@ Public NotInheritable Class ConsoleMode
     Public Overrides Sub Run()
         While True
             Try
-                Global.System.Console.Write("{0}@{1}:{2}> ", AppSettings.Username _
-                                                           , AppSettings.Host, AppSettings.Port)
+                SysConsole.Write("{0}@{1}:{2}> ", AppSettings.Username _
+                                                , AppSettings.Host, AppSettings.Port)
 
-                Dim input As String = Global.System.Console.ReadLine()
+                Dim input As String = SysConsole.ReadLine()
                 If String.IsNullOrWhiteSpace(input) Then
                     Continue While
                 End If
@@ -187,50 +264,131 @@ Public NotInheritable Class ConsoleMode
                 Dim cmd As String = Nothing
                 ExtractCommandLineArguments(input, cmd, args)
 
-                If cmd IsNot Nothing Then
-                    cmd = cmd.ToLower().Trim()
-                End If
-
                 '' find action
-                Dim action As IConsoleModeAction = Me._CONTAINER _
-                                                     .GetExportedValues(Of Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction)() _
-                                                     .SingleOrDefault(Function(x)
-                                                                          Dim names As IEnumerable(Of String) = x.Names
-                                                                          If names Is Nothing Then
-                                                                              names = Enumerable.Empty(Of String)()
-                                                                          End If
-
-                                                                          '' normalize
-                                                                          names = names.Where(Function(y) Not String.IsNullOrWhiteSpace(y)) _
-                                                                                       .Select(Function(y) y.ToLower().Trim())
-
-                                                                          Return names.Any(Function(y) y = cmd)
-                                                                      End Function)
+                Dim action As IConsoleModeAction = Me.TryFindAction(cmd)
 
                 If action IsNot Nothing Then
+                    SysConsole.WriteLine()
+
                     action.Execute(Me._CONN, args)
+
+                    SysConsole.WriteLine()
                 Else
                     Select Case cmd
                         Case "exit", "close"
+                            '' exit application
                             Exit While
+
+                        Case "help", "?"
+                            Dim actionsToDisplay = Me.GetActions() _
+                                                     .Where(Function(x) x.ShowInHelp) _
+                                                     .ToList()
+
+                            Dim normalizedNames As IList(Of String) = args.Where(Function(x) Not String.IsNullOrWhiteSpace(x)) _
+                                                                          .Select(Function(x) x.ToLower().Trim()) _
+                                                                          .Distinct() _
+                                                                          .ToList()
+
+                            '' show help
+                            If (normalizedNames.Count < 1) Then
+                                SysConsole.WriteLine()
+                                SysConsole.WriteLine("Avaiable commands:")
+
+                                '' list available commands / actions
+                                For Each a As IConsoleModeAction In actionsToDisplay.Where(Function(x) If(x.Names, Enumerable.Empty(Of String)).OfType(Of String) _
+                                                                                                                                               .FirstOrDefault() IsNot Nothing) _
+                                                                                    .OrderBy(Function(x) x.Names.FirstOrDefault(), _
+                                                                                             StringComparer.InvariantCultureIgnoreCase)
+
+                                    SysConsole.WriteLine()
+
+                                    ConsoleHelper.InvokeForColor(Sub()
+                                                                     SysConsole.Write("  * {0}", a.Names.First())
+                                                                 End Sub, foreColor:=ConsoleColor.White)
+
+                                    SysConsole.WriteLine()
+
+                                    ConsoleHelper.InvokeForColor(Sub()
+                                                                     SysConsole.Write("    {0}", a.ShortDescription)
+                                                                 End Sub, foreColor:=ConsoleColor.Gray)
+
+                                    SysConsole.WriteLine()
+                                Next
+
+                                SysConsole.WriteLine()
+                            Else
+                                '' show help of commands / actions 
+
+                                For Each name As String In normalizedNames
+                                    Dim a = Me.TryFindAction(name)
+                                    If a Is Nothing Then
+                                        ''TODO: show warning
+
+                                        Continue For
+                                    End If
+
+                                    SysConsole.WriteLine()
+
+                                    a.ShowHelp()
+
+                                    SysConsole.WriteLine()
+                                Next
+                            End If
+                            Exit Select
+
+                        Case Else
+                            '' unknown command
+                            ConsoleHelper.InvokeForColor(Sub()
+                                                             SysConsole.WriteLine()
+
+                                                             SysConsole.Write("Unknown command """)
+                                                         End Sub, foreColor:=ConsoleColor.Yellow)
+
+                            ConsoleHelper.InvokeForColor(Sub()
+                                                             SysConsole.Write(cmd)
+                                                         End Sub, foreColor:=ConsoleColor.White)
+
+                            ConsoleHelper.InvokeForColor(Sub()
+                                                             SysConsole.WriteLine("""!")
+
+                                                             SysConsole.WriteLine()
+                                                         End Sub, foreColor:=ConsoleColor.Yellow)
+                            Exit Select
                     End Select
                 End If
             Catch ex As Exception
-                Dim innerEx As Exception = ex.GetBaseException()
-                If innerEx Is Nothing Then
-                    innerEx = ex
-                End If
+                Dim innerEx As Exception = If(ex.GetBaseException(), ex)
 
                 ConsoleHelper.InvokeForColor(Sub()
-                                                 Global.System.Console.WriteLine()
+                                                 SysConsole.WriteLine()
 
-                                                 Global.System.Console.WriteLine(innerEx)
+                                                 SysConsole.WriteLine(innerEx)
 
-                                                 Global.System.Console.WriteLine()
+                                                 SysConsole.WriteLine()
                                              End Sub, foreColor:=ConsoleColor.Red)
             End Try
         End While
     End Sub
+
+    Private Function TryFindAction(cmd As String) As IConsoleModeAction
+        If cmd IsNot Nothing Then
+            cmd = cmd.ToLower().Trim()
+        End If
+
+        Return Me.GetActions() _
+                 .SingleOrDefault(Function(x)
+                                      Dim names As IEnumerable(Of String) = x.Names
+                                      If names Is Nothing Then
+                                          names = Enumerable.Empty(Of String)()
+                                      End If
+
+                                      '' normalize
+                                      names = names.Where(Function(y) Not String.IsNullOrWhiteSpace(y)) _
+                                                   .Select(Function(y) y.ToLower().Trim())
+
+                                      Return names.Any(Function(y) y = cmd)
+                                  End Function)
+    End Function
 
 #End Region
 

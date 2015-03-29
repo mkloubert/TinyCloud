@@ -18,6 +18,7 @@ Imports MarcelJoachimKloubert.TinyCloud.SDK
 Imports System.Net
 Imports MarcelJoachimKloubert.TinyCloud.SDK.Extensions
 Imports System.Reflection
+Imports SysConsole = System.Console
 
 ''' <summary>
 ''' The program class.
@@ -31,7 +32,7 @@ Module Program
     ''' </summary>
     ''' <param name="args">The submitted arguments.</param>
     Sub Main(args As String())
-        Global.System.Console.Clear()
+        SysConsole.Clear()
         PrintHeader()
 
         Try
@@ -43,30 +44,35 @@ Module Program
                 End If
             End Using
         Catch ex As Exception
-            Dim innerEx As Exception = ex.GetBaseException()
-            If innerEx Is Nothing Then
-                innerEx = ex
-            End If
+            Dim innerEx As Exception = If(ex.GetBaseException(), ex)
 
             ConsoleHelper.InvokeForColor(Sub()
-                                             Global.System.Console.WriteLine()
+                                             SysConsole.WriteLine()
 
-                                             Global.System.Console.WriteLine(innerEx)
+                                             SysConsole.WriteLine(innerEx)
 
-                                             Global.System.Console.WriteLine()
+                                             SysConsole.WriteLine()
                                          End Sub, foreColor:=ConsoleColor.Yellow _
                                                 , bgColor:=ConsoleColor.Red)
         End Try
+
+#If DEBUG Then
+        Global.System.Console.WriteLine()
+        Global.System.Console.WriteLine()
+
+        Global.System.Console.WriteLine("===== ENTER =====")
+        Global.System.Console.ReadLine()
+#End If
     End Sub
 
     Private Sub PrintHeader()
         Dim title As String = String.Format("TinyCloud Console {0}", _
                                             Assembly.GetExecutingAssembly().GetName().Version)
 
-        Global.System.Console.WriteLine(title)
-        Global.System.Console.WriteLine(String.Concat(Enumerable.Repeat("=", _
-                                                          title.Length + 5)))
-        Global.System.Console.WriteLine()
+        SysConsole.WriteLine(title)
+        SysConsole.WriteLine(String.Concat(Enumerable.Repeat("=", _
+                                                             title.Length + 5)))
+        SysConsole.WriteLine()
     End Sub
 
 #End Region

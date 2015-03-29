@@ -14,6 +14,7 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.IO;
 using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using System;
 using System.IO;
@@ -28,7 +29,13 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
     {
         private sealed class CloudPrincipal : CloudObjectBase, ICloudPrincipal
         {
-            #region Properties (5)
+            #region Properties (6)
+
+            public IDirectory Directory
+            {
+                get;
+                internal set;
+            }
 
             internal CloudIdentity Identity
             {
@@ -57,9 +64,9 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 set;
             }
 
-            #endregion Properties (5)
+            #endregion Properties (6)
 
-            #region Methods (5)
+            #region Methods (6)
 
             public void Decrypt(Stream src, Stream dest)
             {
@@ -171,6 +178,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 }
             }
 
+            public DirectoryInfo GetDataDirectory()
+            {
+                return new DirectoryInfo(Path.Combine(AppServices.GetDataDirectory().FullName,
+                                                      this.Identity.Name));
+            }
+
             public bool IsInRole(string role)
             {
                 //TODO
@@ -221,7 +234,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 return false;
             }
 
-            #endregion Methods (5)
+            #endregion Methods (6)
         }
     }
 }

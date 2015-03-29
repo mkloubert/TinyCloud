@@ -22,6 +22,7 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Files
     /// <summary>
     /// Handles file operations.
     /// </summary>
+    [RouteHttpHandler(Url = "api/files")]
     public sealed class FileHttpHandler : JsonHttpHandlerBase
     {
         #region Properties (1)

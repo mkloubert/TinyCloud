@@ -47,7 +47,7 @@ Public MustInherit Class ConsoleModeActionBase
 
 #End Region
 
-#Region "Properties (2)"
+#Region "Properties (4)"
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.Mode" />
@@ -63,14 +63,39 @@ Public MustInherit Class ConsoleModeActionBase
     ''' </summary>
     Public MustOverride ReadOnly Property Names As IEnumerable(Of String) Implements IConsoleModeAction.Names
 
+    ''' <summary>
+    ''' <see cref="IConsoleModeAction.ShortDescription" />
+    ''' </summary>
+    Public Overridable ReadOnly Property ShortDescription As String Implements IConsoleModeAction.ShortDescription
+        Get
+            Return Nothing
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' <see cref="IConsoleModeAction.ShowInHelp" />
+    ''' </summary>
+    Public Overridable ReadOnly Property ShowInHelp As Boolean Implements IConsoleModeAction.ShowInHelp
+        Get
+            Return True
+        End Get
+    End Property
+
 #End Region
 
-#Region "Methods (1)"
+#Region "Methods (2)"
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.Execute" />
     ''' </summary>
     Public MustOverride Sub Execute(conn As CloudConnection, args As IList(Of String)) Implements IConsoleModeAction.Execute
+
+    ''' <summary>
+    ''' <see cref="IConsoleModeAction.ShowHelp" />
+    ''' </summary>
+    Public Overridable Sub ShowHelp() Implements IConsoleModeAction.ShowHelp
+        ''TODO
+    End Sub
 
 #End Region
 

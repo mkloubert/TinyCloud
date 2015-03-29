@@ -15,6 +15,7 @@
 //  License along with this library.
 
 using MarcelJoachimKloubert.TinyCloud.SDK.Helpers;
+using MarcelJoachimKloubert.TinyCloud.SDK.IO.Users;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -116,7 +117,16 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
         #endregion Properties (4)
 
-        #region Methods (6)
+        #region Methods (7)
+
+        /// <summary>
+        /// Creates an empty, dynamic and exandable object.
+        /// </summary>
+        /// <returns>The new object.</returns>
+        protected static dynamic CreateDynamicObject()
+        {
+            return new global::System.Dynamic.ExpandoObject();
+        }
 
         /// <inheriteddoc />
         public IHttpHandler GetHttpHandler(RequestContext requestContext)
@@ -144,6 +154,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             return supportedMethods.OrderBy(x => x, StringComparer.InvariantCultureIgnoreCase)
                                    .ToList();
         }
+
+        /// <summary>
+        /// Stores the logic for the <see cref="HttpHandlerBase.ProcessRequest(HttpContext)" /> method.
+        /// </summary>
+        /// <param name="request">The underlying HTTP request context.</param>
+        protected abstract void OnProcessRequest(IHttpRequest request);
 
         /// <inheriteddoc />
         public void ProcessRequest(HttpContext context)
@@ -232,6 +248,8 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                                                             if (name == username)
                                                             {
                                                                 newUser.Identity.IsAuthenticated = true;
+                                                                newUser.Directory = new UserDirectory(new UserFileSystem(newUser),
+                                                                                                      newUser.GetDataDirectory());
 
                                                                 user = newUser;
                                                             }
@@ -341,12 +359,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             }
         }
 
-        /// <summary>
-        /// Stores the logic for the <see cref="HttpHandlerBase.ProcessRequest(HttpContext)" /> method.
-        /// </summary>
-        /// <param name="request">The underlying HTTP request context.</param>
-        protected abstract void OnProcessRequest(IHttpRequest request);
-
-        #endregion Methods (6)
+        #endregion Methods (7)
     }
 }

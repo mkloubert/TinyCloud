@@ -85,7 +85,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <returns>The created object.</returns>
         protected static dynamic CreateResultObject(int? code, string msg = null, object data = null)
         {
-            dynamic result = new global::System.Dynamic.ExpandoObject();
+            dynamic result = CreateDynamicObject();
             result.code = code;
             result.msg = msg;
             result.data = data;

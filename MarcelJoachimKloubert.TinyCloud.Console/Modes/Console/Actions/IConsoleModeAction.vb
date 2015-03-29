@@ -21,7 +21,7 @@ Imports MarcelJoachimKloubert.TinyCloud.SDK
 ''' </summary>
 Public Interface IConsoleModeAction : Inherits ICloudObject
 
-#Region "Properties (2)"
+#Region "Properties (4)"
 
     ''' <summary>
     ''' Gets the underlying mode instance.
@@ -33,9 +33,19 @@ Public Interface IConsoleModeAction : Inherits ICloudObject
     ''' </summary>
     ReadOnly Property Names As IEnumerable(Of String)
 
+    ''' <summary>
+    ''' Gets the short description of the command.
+    ''' </summary>
+    ReadOnly Property ShortDescription As String
+
+    ''' <summary>
+    ''' Gets if the action should be shown by help command or not.
+    ''' </summary>
+    ReadOnly Property ShowInHelp As Boolean
+
 #End Region
 
-#Region "Methods (1)"
+#Region "Methods (2)"
 
     ''' <summary>
     ''' Executes the action.
@@ -43,6 +53,11 @@ Public Interface IConsoleModeAction : Inherits ICloudObject
     ''' <param name="conn">The underlying connection.</param>
     ''' <param name="args">The arguments for the action.</param>
     Sub Execute(conn As CloudConnection, args As IList(Of String))
+
+    ''' <summary>
+    ''' Shows the help screen of that action.
+    ''' </summary>
+    Sub ShowHelp()
 
 #End Region
 

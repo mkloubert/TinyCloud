@@ -23,6 +23,7 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers
     /// <summary>
     /// Handler that sends server information.
     /// </summary>
+    [RouteHttpHandler("api/hello")]
     public sealed class HelloHttpHandler : JsonHttpHandlerBase
     {
         #region Properties (1)

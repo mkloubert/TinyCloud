@@ -14,6 +14,8 @@
 ''  You should have received a copy of the GNU Affero General Public License
 ''  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+Imports SysConsole = System.Console
+
 Module ConsoleHelper
 
 #Region "Methods (1)"
@@ -27,22 +29,22 @@ Module ConsoleHelper
     Public Sub InvokeForColor(action As Action,
                               Optional foreColor As ConsoleColor? = Nothing, Optional bgColor As ConsoleColor? = Nothing)
 
-        Dim oldFG As ConsoleColor = Global.System.Console.ForegroundColor
-        Dim oldBG As ConsoleColor = Global.System.Console.BackgroundColor
+        Dim oldFG As ConsoleColor = SysConsole.ForegroundColor
+        Dim oldBG As ConsoleColor = SysConsole.BackgroundColor
 
         Try
             If foreColor.HasValue Then
-                Global.System.Console.ForegroundColor = foreColor.Value
+                SysConsole.ForegroundColor = foreColor.Value
             End If
 
             If bgColor.HasValue Then
-                Global.System.Console.BackgroundColor = bgColor.Value
+                SysConsole.BackgroundColor = bgColor.Value
             End If
 
             action()
         Finally
-            Global.System.Console.ForegroundColor = oldFG
-            Global.System.Console.BackgroundColor = oldBG
+            SysConsole.ForegroundColor = oldFG
+            SysConsole.BackgroundColor = oldBG
         End Try
     End Sub
 

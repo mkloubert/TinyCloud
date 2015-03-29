@@ -14,18 +14,19 @@
 ''  You should have received a copy of the GNU Affero General Public License
 ''  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-Imports MarcelJoachimKloubert.TinyCloud.SDK
 Imports System.ComponentModel.Composition
-Imports System.Net
-Imports MarcelJoachimKloubert.TinyCloud.SDK.Extensions
 Imports SysConsole = System.Console
+Imports System.Net
+Imports MarcelJoachimKloubert.TinyCloud.SDK
+Imports MarcelJoachimKloubert.TinyCloud.SDK.Extensions
+Imports System.IO
 
 ''' <summary>
-''' Hello action.
+''' Upload file.
 ''' </summary>
 <Export(GetType(Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction))>
 <PartCreationPolicy(CreationPolicy.NonShared)>
-Public NotInheritable Class HelloConsoleModeAction
+Public NotInheritable Class UploadFileConsoleAction
     Inherits ConsoleModeActionBase
 
 #Region "Constructors (1)"
@@ -38,23 +39,14 @@ Public NotInheritable Class HelloConsoleModeAction
 
 #End Region
 
-#Region "Properties (2)"
+#Region "Properties (1)"
 
     ''' <summary>
     ''' <see cref="ConsoleModeActionBase.Names" />
     ''' </summary>
     Public Overrides ReadOnly Property Names As IEnumerable(Of String)
         Get
-            Return New String() {"hello"}
-        End Get
-    End Property
-
-    ''' <summary>
-    ''' <see cref="ConsoleModeActionBase.ShortDescription" />
-    ''' </summary>
-    Public Overrides ReadOnly Property ShortDescription As String
-        Get
-            Return "Gets the hello message."
+            Return New String() {"upload", "ul"}
         End Get
     End Property
 
@@ -66,21 +58,54 @@ Public NotInheritable Class HelloConsoleModeAction
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
     Public Overrides Sub Execute(conn As CloudConnection, args As IList(Of String))
-        Dim request As WebRequest = conn.CreateApiRequest("hello")
-        request.Method = "GET"
+        For Each a As String In args
+            Try
+                If String.IsNullOrWhiteSpace(a) Then
+                    Continue For
+                End If
 
-        Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-        If response Is Nothing Then
-            Return
-        End If
+                Dim actionToInvoke As Action(Of CloudConnection, String) = Nothing
 
-        Dim data As IDictionary(Of String, Object) = response("data")
-        If data Is Nothing Then
-            Return
-        End If
-        If data.ContainsKey("version") Then
-            SysConsole.WriteLine("Version: {0}", data("version"))
-        End If
+                If File.Exists(a) Then
+                    actionToInvoke = AddressOf Me.UploadFile
+                ElseIf Directory.Exists(a) Then
+                    actionToInvoke = AddressOf Me.UploadDirectory
+                Else
+                    '' show warning
+                End If
+
+                If actionToInvoke IsNot Nothing Then
+                    actionToInvoke(conn, a)
+                End If
+            Catch ex As Exception
+
+            End Try
+        Next
+    End Sub
+
+    Private Sub UploadDirectory(conn As CloudConnection, path As String)
+
+    End Sub
+
+    Private Sub UploadFile(conn As CloudConnection, path As String)
+        Dim f As FileInfo = New FileInfo(path)
+
+        Using s As FileStream = f.OpenRead()
+            Dim request As WebRequest = conn.CreateApiRequest("upload-file")
+            request.Method = "POST"
+
+            request.ContentLength = s.Length
+            request.Headers("X-TinyCloud-Filename") = f.Name
+
+            Using rs As Stream = request.GetRequestStream()
+                s.CopyTo(rs)
+            End Using
+
+            Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
+            If response IsNot Nothing Then
+
+            End If
+        End Using
     End Sub
 
 #End Region

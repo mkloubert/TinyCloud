@@ -16,6 +16,7 @@
 
 Imports System.ComponentModel.Composition
 Imports MarcelJoachimKloubert.TinyCloud.SDK
+Imports SysConsole = System.Console
 
 ''' <summary>
 ''' Action for clearing the console screen.
@@ -35,7 +36,7 @@ Public NotInheritable Class ClsConsoleModeAction
 
 #End Region
 
-#Region "Properties (1)"
+#Region "Properties (2)"
 
     ''' <summary>
     ''' <see cref="ConsoleModeActionBase.Names" />
@@ -43,6 +44,15 @@ Public NotInheritable Class ClsConsoleModeAction
     Public Overrides ReadOnly Property Names As IEnumerable(Of String)
         Get
             Return New String() {"cls"}
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' <see cref="ConsoleModeActionBase.ShortDescription" />
+    ''' </summary>
+    Public Overrides ReadOnly Property ShortDescription As String
+        Get
+            Return "Clears the console."
         End Get
     End Property
 
@@ -54,7 +64,7 @@ Public NotInheritable Class ClsConsoleModeAction
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
     Public Overrides Sub Execute(conn As CloudConnection, args As IList(Of String))
-        Global.System.Console.Clear()
+        SysConsole.Clear()
     End Sub
 
 #End Region

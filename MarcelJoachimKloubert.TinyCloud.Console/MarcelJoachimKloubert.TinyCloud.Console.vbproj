@@ -86,8 +86,10 @@
     <Compile Include="Modes\Console\Actions\ConsoleModeActionBase.vb" />
     <Compile Include="Modes\Console\Actions\IConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ClsConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\ListConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\HelloConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\TestArgsConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\UploadFileConsoleAction.vb" />
     <Compile Include="Modes\Console\ConsoleMode.vb" />
     <Compile Include="Modes\IMode.vb" />
     <Compile Include="Modes\ModeBase.vb" />

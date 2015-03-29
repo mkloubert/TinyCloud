@@ -72,9 +72,21 @@
     </Compile>
     <Compile Include="Handlers\Http\IHttpRequest.cs" />
     <Compile Include="Handlers\Http\JsonHttpHandlerBase.cs" />
+    <Compile Include="Handlers\Http\RouteHttpHandlerAttribute.cs" />
     <Compile Include="Helpers\CryptoHelper.cs" />
     <Compile Include="ICloudDisposable.cs" />
     <Compile Include="ICloudObject.cs" />
+    <Compile Include="IO\DirectoryBase.cs" />
+    <Compile Include="IO\FileBase.cs" />
+    <Compile Include="IO\FileSystemBase.cs" />
+    <Compile Include="IO\FileSystemObjectBase.cs" />
+    <Compile Include="IO\IDirectory.cs" />
+    <Compile Include="IO\IFile.cs" />
+    <Compile Include="IO\IFileSystem.cs" />
+    <Compile Include="IO\IFileSystemObject.cs" />
+    <Compile Include="IO\Users\UserDirectory.cs" />
+    <Compile Include="IO\Users\UserFile.cs" />
+    <Compile Include="IO\Users\UserFileSystem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Security\ICloudIdentity.cs" />
     <Compile Include="Security\ICloudPrincipal.cs" />
@@ -83,6 +95,7 @@
     <EmbeddedResource Include="LICENSE" />
     <None Include="MarcelJoachimKloubert.TinyCloud.SDK.snk" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

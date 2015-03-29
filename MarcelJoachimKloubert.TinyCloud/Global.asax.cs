@@ -17,7 +17,8 @@
 using MarcelJoachimKloubert.TinyCloud.SDK;
 using System;
 using System.Configuration;
-using System.Security.Cryptography;
+using System.Linq;
+using System.Reflection;
 using System.Web;
 using System.Web.Configuration;
 using System.Web.Routing;
@@ -51,7 +52,7 @@ namespace MarcelJoachimKloubert.TinyCloud
         {
             AppServices.ConfigProvider = GetWebConfig;
 
-            InitRoutes(RouteTable.Routes);
+            this.InitRoutes();
         }
 
         private static Configuration GetWebConfig()
@@ -59,13 +60,36 @@ namespace MarcelJoachimKloubert.TinyCloud
             return WebConfigurationManager.OpenWebConfiguration("~/");
         }
 
-        private static void InitRoutes(RouteCollection routes)
+        private void InitRoutes()
         {
-            routes.Add(new Route("api/files",
-                                 new global::MarcelJoachimKloubert.TinyCloud.Handlers.Files.FileHttpHandler()));
+            var routes = RouteTable.Routes;
 
-            routes.Add(new Route("api/hello",
-                                new global::MarcelJoachimKloubert.TinyCloud.Handlers.HelloHttpHandler()));
+            var asms = new Assembly[] { typeof(global::MarcelJoachimKloubert.TinyCloud.__IDummy).Assembly };
+
+            foreach (var type in asms.SelectMany(x => x.GetTypes()))
+            {
+                var routeAttribs = type.GetCustomAttributes(false)
+                                       .OfType<global::MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http.RouteHttpHandlerAttribute>()
+                                       .ToList();
+
+                if (routeAttribs.Count < 1)
+                {
+                    continue;
+                }
+
+                var instance = (global::System.Web.Routing.IRouteHandler)Activator.CreateInstance(type);
+                foreach (var attrib in routeAttribs)
+                {
+                    var url = attrib.Url;
+                    if (string.IsNullOrWhiteSpace(url))
+                    {
+                        continue;
+                    }
+
+                    routes.Add(new Route(url,
+                                         instance));
+                }
+            }
         }
 
         protected void Session_End(object sender, EventArgs e)

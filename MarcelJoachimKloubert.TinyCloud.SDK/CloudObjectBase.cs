@@ -108,5 +108,36 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
         }
 
         #endregion Properties (2)
+
+        #region Methods (1)
+
+        /// <summary>
+        /// Returns a value without throwing an exception.
+        /// </summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="provider">The function that provides the return value.</param>
+        /// <param name="fallbackValue">The fallback value if execution failed.</param>
+        /// <returns>The return value.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="provider" /> is <see langword="null" />.
+        /// </exception>
+        protected static T GetValueSafe<T>(Func<T> provider, T fallbackValue = default(T))
+        {
+            if (provider == null)
+            {
+                throw new ArgumentNullException("provider");
+            }
+
+            try
+            {
+                return provider();
+            }
+            catch
+            {
+                return fallbackValue;
+            }
+        }
+
+        #endregion Methods (1)
     }
 }
