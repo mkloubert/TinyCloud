@@ -57,7 +57,7 @@ Public NotInheritable Class UploadFileConsoleAction
     ''' <summary>
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
-    Public Overrides Sub Execute(conn As CloudConnection, args As IList(Of String))
+    Public Overrides Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
         For Each a As String In args
             Try
                 If String.IsNullOrWhiteSpace(a) Then

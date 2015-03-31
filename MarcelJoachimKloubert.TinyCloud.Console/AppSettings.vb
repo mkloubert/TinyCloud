@@ -22,12 +22,31 @@ Imports MarcelJoachimKloubert.TinyCloud.SDK
 ''' </summary>
 Module AppSettings
 
+#Region "Fields (3)"
+
+    ''' <summary>
+    ''' Stores the default host.
+    ''' </summary>
+    Public Const DEFAULT_HOST As String = "localhost"
+
+    ''' <summary>
+    ''' Stores the default TCP port.
+    ''' </summary>
+    Public Const DEFAULT_PORT As Integer = 5979
+
+    ''' <summary>
+    ''' Stores the default user name.
+    ''' </summary>
+    Public Const DEFAULT_USER As String = "admin"
+
+#End Region
+
 #Region "Properties (6)"
 
     ''' <summary>
     ''' Gets or sets the host.
     ''' </summary>
-    Public Property Host As String = "localhost"
+    Public Property Host As String = DEFAULT_HOST
 
     ''' <summary>
     ''' Gets or sets if connection is secure or not.
@@ -47,7 +66,7 @@ Module AppSettings
     ''' <summary>
     ''' Gets or sets the port.
     ''' </summary>
-    Public Property Port As Integer = 5979
+    Public Property Port As Integer = DEFAULT_PORT
 
     ''' <summary>
     ''' Gets or sets the suffix for the service URL.
@@ -57,7 +76,7 @@ Module AppSettings
     ''' <summary>
     ''' Gets or sets the username.
     ''' </summary>
-    Public Property Username As String = "admin"
+    Public Property Username As String = DEFAULT_USER
 
 #End Region
 

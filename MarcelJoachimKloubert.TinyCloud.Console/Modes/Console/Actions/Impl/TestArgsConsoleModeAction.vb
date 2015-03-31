@@ -63,7 +63,7 @@ Public NotInheritable Class TestArgsConsoleModeAction
     ''' <summary>
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
-    Public Overrides Sub Execute(conn As CloudConnection, args As IList(Of String))
+    Public Overrides Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
         For i = 1 To args.Count
             Dim a As String = args(i - 1)
 

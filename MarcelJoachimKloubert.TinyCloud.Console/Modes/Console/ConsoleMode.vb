@@ -259,9 +259,8 @@ Public NotInheritable Class ConsoleMode
                     Continue While
                 End If
 
-                Dim args As IList(Of String) = Nothing
-
                 Dim cmd As String = Nothing
+                Dim args As IList(Of String) = Nothing
                 ExtractCommandLineArguments(input, cmd, args)
 
                 '' find action
@@ -270,7 +269,7 @@ Public NotInheritable Class ConsoleMode
                 If action IsNot Nothing Then
                     SysConsole.WriteLine()
 
-                    action.Execute(Me._CONN, args)
+                    action.Execute(Me._CONN, cmd, args)
 
                     SysConsole.WriteLine()
                 Else

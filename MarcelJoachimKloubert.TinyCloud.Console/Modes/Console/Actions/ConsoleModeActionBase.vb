@@ -88,7 +88,7 @@ Public MustInherit Class ConsoleModeActionBase
     ''' <summary>
     ''' <see cref="IConsoleModeAction.Execute" />
     ''' </summary>
-    Public MustOverride Sub Execute(conn As CloudConnection, args As IList(Of String)) Implements IConsoleModeAction.Execute
+    Public MustOverride Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String)) Implements IConsoleModeAction.Execute
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.ShowHelp" />

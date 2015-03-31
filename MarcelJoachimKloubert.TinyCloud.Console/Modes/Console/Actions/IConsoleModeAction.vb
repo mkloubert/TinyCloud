@@ -51,8 +51,9 @@ Public Interface IConsoleModeAction : Inherits ICloudObject
     ''' Executes the action.
     ''' </summary>
     ''' <param name="conn">The underlying connection.</param>
+    ''' <param name="cmd">The lower-case normalized command.</param>
     ''' <param name="args">The arguments for the action.</param>
-    Sub Execute(conn As CloudConnection, args As IList(Of String))
+    Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
 
     ''' <summary>
     ''' Shows the help screen of that action.
