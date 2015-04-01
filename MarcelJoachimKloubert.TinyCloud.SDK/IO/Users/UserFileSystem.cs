@@ -47,7 +47,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             this.User = user;
 
             this._ROOT = new UserDirectory(this,
-                                           user.GetDataDirectory());
+                                           user.GetDataDirectory(), null);
         }
 
         #endregion Constructors (1)
@@ -161,7 +161,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
                 path = string.Empty;
             }
 
-            path = path.Replace(_PATH_SEPARATOR, Path.DirectorySeparatorChar)
+            path = path.Replace(Path.DirectorySeparatorChar, _PATH_SEPARATOR)
                        .Trim();
 
             while (path.StartsWith(_PATH_SEPARATOR.ToString()))

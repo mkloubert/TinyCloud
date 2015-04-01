@@ -14,8 +14,10 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using System;
 using System.IO;
+using System.Xml.Linq;
 
 namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 {
@@ -33,7 +35,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
         #region Constructors (1)
 
         /// <inheriteddoc />
-        public UserFile(UserFileSystem system, FileInfo file, IDirectory directory)
+        public UserFile(UserFileSystem system, FileInfo file, XElement xml, IDirectory directory)
             : base(system: system)
         {
             if (file == null)
@@ -42,12 +44,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             }
 
             this._DIRECTORY = directory;
-            this.LocalFile = new FileInfo(Path.GetFullPath(file.FullName));
+            this.LocalFile = file;
         }
 
         #endregion Constructors (1)
 
-        #region Properties (6)
+        #region Properties (7)
 
         /// <inheriteddoc />
         public override IDirectory Directory
@@ -88,6 +90,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             get { return GetValueSafe(() => (long?)this.LocalFile.Length); }
         }
 
-        #endregion Properties (6)
+        /// <summary>
+        /// Gets the underlying user.
+        /// </summary>
+        public ICloudPrincipal User
+        {
+            get { return this.FileSystem.User; }
+        }
+
+        #endregion Properties (7)
     }
 }

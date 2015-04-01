@@ -74,6 +74,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Handlers\Directories\CreateDirectoryHttpHandler.cs" />
     <Compile Include="Handlers\Directories\ListHttpHandler.cs" />
     <Compile Include="Handlers\Files\FileHttpHandler.cs" />
     <Compile Include="Handlers\Files\UploadFileHttpHandler.cs" />

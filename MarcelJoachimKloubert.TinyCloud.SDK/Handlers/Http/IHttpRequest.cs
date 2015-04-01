@@ -25,7 +25,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
     /// <summary>
     /// A HTTP request context.
     /// </summary>
-    public interface IHttpRequest: ICloudObject
+    public interface IHttpRequest : ICloudObject
     {
         #region Properties (8)
 
@@ -71,7 +71,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
         #endregion Properties (8)
 
-        #region Methods (5)
+        #region Methods (7)
 
         /// <summary>
         /// A application specific header.
@@ -107,6 +107,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <param name="data">The data to write.</param>
         void Write(byte[] data);
 
-        #endregion Methods (5)
+        #endregion Methods (7)
     }
 }

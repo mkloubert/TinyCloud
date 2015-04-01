@@ -25,8 +25,9 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
     /// </summary>
     public abstract class DirectoryBase : FileSystemObjectBase, IDirectory
     {
-        #region Fields (2)
-
+        #region Fields (3)
+        
+        private readonly Func<string, IDirectory> _CREATE_DIRECTORY_FUNC;
         private readonly Func<IEnumerable<IDirectory>> _GET_DIRECTORIES_FUNC;
         private readonly Func<IEnumerable<IFile>> _GET_FILES_FUNC;
 
@@ -62,11 +63,13 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         {
             if (this._IS_SYNCHRONIZED)
             {
+                this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory_ThreadSafe;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories_ThreadSafe;
                 this._GET_FILES_FUNC = this.OnGetFiles_ThreadSafe;
             }
             else
             {
+                this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories;
                 this._GET_FILES_FUNC = this.OnGetFiles;
             }
@@ -90,7 +93,29 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 
         #endregion Properties (3)
 
-        #region Methods (7)
+        #region Methods (10)
+        
+        /// <inheriteddoc />
+        public IDirectory CreateDirectory(string name)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException("name");
+            }
+
+            name = name.Trim();
+            if (name == string.Empty)
+            {
+                throw new FormatException("name");
+            }
+
+            if (this.GetDirectories().Any(x => x.Name == name))
+            {
+                throw new ArgumentException("name");
+            }
+
+            return this._CREATE_DIRECTORY_FUNC(name);
+        }
 
         /// <inheriteddoc />
         public IEnumerable<IDirectory> GetDirectories()
@@ -115,6 +140,25 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         public IEnumerable<IFile> GetFiles()
         {
             return (this._GET_FILES_FUNC() ?? Enumerable.Empty<IFile>()).Where(x => x != null);
+        }
+
+        /// <summary>
+        /// Stores the logic for rhe <see cref="DirectoryBase.OnCreateDirectory(string)" /> method.
+        /// </summary>
+        /// <param name="name">The name of the new directory.</param>
+        /// <returns>The created directory.</returns>
+        protected abstract IDirectory OnCreateDirectory(string name);
+        
+        private IDirectory OnCreateDirectory_ThreadSafe(string name)
+        {
+            IDirectory result;
+
+            lock (this._SYNC)
+            {
+                result = this.OnCreateDirectory(name);
+            }
+
+            return result;
         }
 
         /// <summary>

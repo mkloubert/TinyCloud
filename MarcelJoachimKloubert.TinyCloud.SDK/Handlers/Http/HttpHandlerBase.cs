@@ -249,7 +249,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                                                             {
                                                                 newUser.Identity.IsAuthenticated = true;
                                                                 newUser.Directory = new UserDirectory(new UserFileSystem(newUser),
-                                                                                                      newUser.GetDataDirectory());
+                                                                                                      newUser.GetDataDirectory(), null);
 
                                                                 user = newUser;
                                                             }

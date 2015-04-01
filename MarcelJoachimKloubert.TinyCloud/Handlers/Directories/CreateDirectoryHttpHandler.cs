@@ -16,15 +16,13 @@
 
 using MarcelJoachimKloubert.TinyCloud.SDK.Extensions;
 using MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http;
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
 {
-    [RouteHttpHandler("api/list")]
-    public sealed class ListHttpHandler : JsonHttpHandlerBase
+    [RouteHttpHandler("api/create-directory")]
+    public class CreateDirectoryHttpHandler : JsonHttpHandlerBase
     {
         #region Properties (1)
 
@@ -54,60 +52,57 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
                 requestData = null;
             }
 
-            var path = "";
-
-            if (requestData != null)
+            if (requestData == null)
             {
-                if (requestData.ContainsKey("path"))
-                {
-                    path = requestData["path"].AsString();
-                }
-            }
+                result.code = 1;
 
-            var dir = request.User.Directory.FileSystem.GetDirectory(path);
-            if (dir == null)
-            {
-                // not found
-
-                result.code = 404;
                 return;
             }
 
-            var resultData = CreateDynamicObject();
+            if (requestData.ContainsKey("path") == false)
             {
-                // sub directories
-                var dirs = new List<object>();
-                foreach (var subDir in dir.GetDirectories())
-                {
-                    dirs.Add(new
-                        {
-                            name = subDir.Name,
-                            lastWriteTime = GetValueSafe(() => subDir.LastWriteTime), 
-                        });
-                }
+                result.code = 2;
 
-                // files
-                var files = new List<object>();
-                foreach (var file in dir.GetFiles())
-                {
-                    files.Add(new
-                        {
-                            name = file.Name,
-                            size = GetValueSafe(() => file.Size, -1),
-                            lastWriteTime = GetValueSafe(() => file.LastWriteTime), 
-                        });
-                }
-
-                resultData.dirs = dirs;
-                resultData.files = files;
-                resultData.path = "/" + string.Join("/",
-                                                    dir.GetDirectoryTree()
-                                                       .Reverse()
-                                                       .Select(x => x.Name)
-                                                       .Where(x => string.IsNullOrWhiteSpace(x) == false));
+                return;
             }
 
-            result.data = resultData;
+            var path = (requestData["path"].AsString() ?? string.Empty).Trim();
+            if (path == string.Empty)
+            {
+                result.code = 3;
+
+                return;
+            }
+
+            while (path.EndsWith("/"))
+            {
+                path = path.Substring(0, path.Length - 1);
+            }
+
+            if (path.StartsWith("/") == false)
+            {
+                path = "/" + path;
+            }
+
+            var parts = path.Split('/');
+            if (parts.Length < 2)
+            {
+                result.code = 4;
+
+                return;
+            }
+
+            var fullPath = "/" + string.Join("/",
+                                             parts.Take(parts.Length - 1));
+            var dir = request.User.Directory.FileSystem.GetDirectory(fullPath);
+            if (dir == null)
+            {
+                result.code = 404;
+
+                return;
+            }
+
+            dir.CreateDirectory(parts.Last());
         }
 
         #endregion Methods (1)

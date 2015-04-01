@@ -43,7 +43,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 
         #endregion Properties (2)
 
-        #region Methods (3)
+        #region Methods (4)
+
+        /// <summary>
+        /// Creates a new sub directory.
+        /// </summary>
+        /// <param name="name">The name of the new directory.</param>
+        /// <returns>The created directory.</returns>
+        IDirectory CreateDirectory(string name);
 
         /// <summary>
         /// Returns the sub directories of that directory.
@@ -63,6 +70,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         /// <returns>The files.</returns>
         IEnumerable<IFile> GetFiles();
 
-        #endregion Methods (3)
+        #endregion Methods (4)
     }
 }
