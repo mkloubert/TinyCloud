@@ -15,6 +15,7 @@
 ''  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Imports MarcelJoachimKloubert.TinyCloud.SDK
+Imports SysConsole = System.Console
 
 ''' <summary>
 ''' A basic action for a <see cref="ConsoleMode" /> instance.
@@ -83,12 +84,19 @@ Public MustInherit Class ConsoleModeActionBase
 
 #End Region
 
-#Region "Methods (2)"
+#Region "Methods (3)"
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.Execute" />
     ''' </summary>
     Public MustOverride Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String)) Implements IConsoleModeAction.Execute
+
+    ''' <summary>
+    ''' <see cref="ConsoleMode.ShowException" />
+    ''' </summary>
+    Protected Shared Sub ShowException(ex As Exception)
+        ConsoleMode.ShowException(ex)
+    End Sub
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.ShowHelp" />

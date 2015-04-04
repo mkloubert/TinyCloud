@@ -25,7 +25,52 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Helpers
     /// </summary>
     public static class CryptoHelper
     {
-        #region Methods (2)
+        #region Methods (3)
+
+        /// <summary>
+        /// Creates a <see cref="CryptoStream" /> instance.
+        /// </summary>
+        /// <param name="baseStream">The base stream.</param>
+        /// <param name="mode">The mode.</param>
+        /// <param name="pwd">The password.</param>
+        /// <param name="salt">The salt.</param>
+        /// <param name="iterations">The iterations.</param>
+        /// <returns>The created instance.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="baseStream" /> is <see langword="null" />.
+        /// </exception>
+        public static CryptoStream CreateCryptoStream(Stream baseStream, CryptoStreamMode mode,
+                                                      byte[] pwd, byte[] salt, int iterations)
+        {
+            if (baseStream == null)
+            {
+                throw new ArgumentNullException("baseStream");
+            }
+
+            ICryptoTransform transform = null;
+
+            using (var db = new Rfc2898DeriveBytes(pwd, salt, iterations))
+            {
+                using (var alg = Rijndael.Create())
+                {
+                    alg.Key = db.GetBytes(32);
+                    alg.IV = db.GetBytes(16);
+
+                    switch (mode)
+                    {
+                        case CryptoStreamMode.Read:
+                            transform = alg.CreateDecryptor();
+                            break;
+
+                        case CryptoStreamMode.Write:
+                            transform = alg.CreateEncryptor();
+                            break;
+                    }
+                }
+            }
+
+            return new CryptoStream(baseStream, transform, mode);
+        }
 
         /// <summary>
         /// Decrypts data.
@@ -38,7 +83,8 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Helpers
         /// <exception cref="ArgumentNullException">
         /// <paramref name="src" /> and/or <paramref name="dest" /> are <see langword="null" />.
         /// </exception>
-        public static void Decrypt(Stream src, Stream dest, byte[] pwd, byte[] salt, int iterations)
+        public static void Decrypt(Stream src, Stream dest,
+                                   byte[] pwd, byte[] salt, int iterations)
         {
             if (src == null)
             {
@@ -50,21 +96,9 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Helpers
                 throw new ArgumentNullException("dest");
             }
 
-            using (var alg = Rijndael.Create())
-            {
-                using (var db = new Rfc2898DeriveBytes(pwd, salt, iterations))
-                {
-                    alg.Key = db.GetBytes(32);
-                    alg.IV = db.GetBytes(16);
-
-                    using (var transform = alg.CreateDecryptor())
-                    {
-                        var cryptoStream = new CryptoStream(src, transform, CryptoStreamMode.Read);
-
-                        cryptoStream.CopyTo(dest);
-                    }
-                }
-            }
+            var cs = CreateCryptoStream(src, CryptoStreamMode.Read,
+                                        pwd, salt, iterations);
+            cs.CopyTo(dest);
         }
 
         /// <summary>
@@ -90,24 +124,13 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Helpers
                 throw new ArgumentNullException("dest");
             }
 
-            using (var alg = Rijndael.Create())
-            {
-                using (var db = new Rfc2898DeriveBytes(pwd, salt, iterations))
-                {
-                    alg.Key = db.GetBytes(32);
-                    alg.IV = db.GetBytes(16);
+            var cs = CreateCryptoStream(dest, CryptoStreamMode.Write,
+                                        pwd, salt, iterations);
 
-                    using (var transform = alg.CreateEncryptor())
-                    {
-                        var cryptoStream = new CryptoStream(dest, transform, CryptoStreamMode.Write);
-
-                        src.CopyTo(cryptoStream);
-                        cryptoStream.FlushFinalBlock();
-                    }
-                }
-            }
+            src.CopyTo(cs);
+            cs.FlushFinalBlock();
         }
 
-        #endregion Methods (2)
+        #endregion Methods (3)
     }
 }

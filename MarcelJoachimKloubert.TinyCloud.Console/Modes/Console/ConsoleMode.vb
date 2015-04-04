@@ -29,10 +29,11 @@ Imports SysConsole = System.Console
 Public NotInheritable Class ConsoleMode
     Inherits ModeBase
 
-#Region "Fields (2)"
+#Region "Fields (3)"
 
     Private ReadOnly _CONN As CloudConnection
     Private ReadOnly _CONTAINER As CompositionContainer
+    Private _currentDirectory As String
 
 #End Region
 
@@ -51,11 +52,36 @@ Public NotInheritable Class ConsoleMode
 
         Me._CONTAINER = New CompositionContainer(catalogs, isThreadSafe:=True)
         Me._CONTAINER.ComposeExportedValue(Of ConsoleMode)(Me)
+
+        Me.CurrentDirectory = Nothing
     End Sub
 
 #End Region
 
-#Region "Methods (4)"
+#Region "Properties (1)"
+
+    ''' <summary>
+    ''' Gets or sets the current directory.
+    ''' </summary>
+    Public Property CurrentDirectory As String
+        Get
+            Return Me._currentDirectory
+        End Get
+
+        Set(value As String)
+            If String.IsNullOrWhiteSpace(value) Then
+                value = "/"
+            Else
+                value = value.Trim()
+            End If
+
+            Me._currentDirectory = value
+        End Set
+    End Property
+
+#End Region
+
+#Region "Methods (6)"
 
     Private Shared Sub ExtractCommandLineArguments(input As String, ByRef cmd As String, ByRef args As IList(Of String))
         cmd = String.Empty
@@ -356,17 +382,34 @@ Public NotInheritable Class ConsoleMode
                     End Select
                 End If
             Catch ex As Exception
-                Dim innerEx As Exception = If(ex.GetBaseException(), ex)
-
-                ConsoleHelper.InvokeForColor(Sub()
-                                                 SysConsole.WriteLine()
-
-                                                 SysConsole.WriteLine(innerEx)
-
-                                                 SysConsole.WriteLine()
-                                             End Sub, foreColor:=ConsoleColor.Red)
+                ShowException(ex)
             End Try
         End While
+    End Sub
+
+    ''' <summary>
+    ''' Outputs an exception.
+    ''' </summary>
+    ''' <param name="ex">The exception to output.</param>
+    Public Shared Sub ShowException(ex As Exception)
+        If ex Is Nothing Then
+            Return
+        End If
+
+        Dim innerEx As Exception = Nothing
+        Try
+            innerEx = If(ex.GetBaseException(), ex)
+        Catch ex2 As Exception
+            innerEx = ex
+        End Try
+
+        ConsoleHelper.InvokeForColor(Sub()
+                                         SysConsole.WriteLine()
+
+                                         SysConsole.WriteLine(innerEx)
+
+                                         SysConsole.WriteLine()
+                                     End Sub, foreColor:=ConsoleColor.Red)
     End Sub
 
     Private Function TryFindAction(cmd As String) As IConsoleModeAction
@@ -376,10 +419,7 @@ Public NotInheritable Class ConsoleMode
 
         Return Me.GetActions() _
                  .SingleOrDefault(Function(x)
-                                      Dim names As IEnumerable(Of String) = x.Names
-                                      If names Is Nothing Then
-                                          names = Enumerable.Empty(Of String)()
-                                      End If
+                                      Dim names As IEnumerable(Of String) = If(x.Names, Enumerable.Empty(Of String)())
 
                                       '' normalize
                                       names = names.Where(Function(y) Not String.IsNullOrWhiteSpace(y)) _

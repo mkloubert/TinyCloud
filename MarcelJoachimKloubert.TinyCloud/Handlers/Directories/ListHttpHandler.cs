@@ -14,11 +14,11 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+using MarcelJoachimKloubert.TinyCloud.SDK;
 using MarcelJoachimKloubert.TinyCloud.SDK.Extensions;
 using MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
@@ -64,7 +64,7 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
                 }
             }
 
-            var dir = request.User.Directory.FileSystem.GetDirectory(path);
+            var dir = GetDirectory(request, path);
             if (dir == null)
             {
                 // not found
@@ -73,29 +73,45 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
                 return;
             }
 
+            var isTest = false;
+            if (requestData.ContainsKey("test"))
+            {
+                var testStr = requestData["test"].AsString();
+                if (string.IsNullOrWhiteSpace(testStr) == false)
+                {
+                    isTest = Convert.ToBoolean(testStr.Trim(), AppServices.DataCulture);
+                }
+            }
+
             var resultData = CreateDynamicObject();
             {
                 // sub directories
                 var dirs = new List<object>();
-                foreach (var subDir in dir.GetDirectories())
+                if (isTest == false)
                 {
-                    dirs.Add(new
-                        {
-                            name = subDir.Name,
-                            lastWriteTime = GetValueSafe(() => subDir.LastWriteTime), 
-                        });
+                    foreach (var subDir in dir.GetDirectories())
+                    {
+                        dirs.Add(new
+                            {
+                                name = subDir.Name,
+                                lastWriteTime = GetValueSafe(() => subDir.LastWriteTime),
+                            });
+                    }
                 }
 
                 // files
                 var files = new List<object>();
-                foreach (var file in dir.GetFiles())
+                if (isTest == false)
                 {
-                    files.Add(new
-                        {
-                            name = file.Name,
-                            size = GetValueSafe(() => file.Size, -1),
-                            lastWriteTime = GetValueSafe(() => file.LastWriteTime), 
-                        });
+                    foreach (var file in dir.GetFiles())
+                    {
+                        files.Add(new
+                            {
+                                name = file.Name,
+                                size = GetValueSafe(() => file.Size, -1),
+                                lastWriteTime = GetValueSafe(() => file.LastWriteTime),
+                            });
+                    }
                 }
 
                 resultData.dirs = dirs;

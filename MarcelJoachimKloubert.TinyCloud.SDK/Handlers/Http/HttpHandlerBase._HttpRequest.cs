@@ -18,6 +18,7 @@ using MarcelJoachimKloubert.TinyCloud.SDK.Extensions;
 using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using Newtonsoft.Json;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web;
@@ -28,7 +29,13 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
     {
         private sealed class _HttpRequest : CloudObjectBase, IHttpRequest
         {
-            #region Properties (8)
+            #region Fields (1)
+
+            internal const string APP_HEADER_NAME_PREFIX = "X-TinyCloud-";
+
+            #endregion
+
+            #region Properties (9)
 
             public HttpContext Context
             {
@@ -61,6 +68,11 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 get { return this.Context.Request; }
             }
 
+            public Encoding RequestEncoding
+            {
+                get { return this.Request.ContentEncoding ?? Encoding.UTF8; }
+            }
+
             public HttpResponse Response
             {
                 get { return this.Context.Response; }
@@ -81,14 +93,15 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
             #endregion Properties (8)
 
-            #region Methods (4)
+            #region Methods (6)
 
             public IHttpRequest AddAppReponseHeader(string name, object value)
             {
                 if (string.IsNullOrWhiteSpace(name) == false)
                 {
-                    this.AddResponseHeader("X-TinyCloud-" + name.Trim(),
-                                           value);
+                    name = APP_HEADER_NAME_PREFIX + name.Trim();
+
+                    this.AddResponseHeader(name, value);
                 }
 
                 return this;
@@ -105,6 +118,22 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 return this;
             }
 
+            public string GetAppRequestHeader(string name)
+            {
+                if (string.IsNullOrWhiteSpace(name) == false)
+                {
+                    name = APP_HEADER_NAME_PREFIX + name.Trim();
+
+                    if (this.Request.Headers.AllKeys.Any(k => (k ?? string.Empty).ToLower().Trim() ==
+                                                              name.ToLower().Trim()))
+                    {
+                        return this.Request.Headers[name] ?? string.Empty;
+                    }
+                }
+
+                return null;
+            }
+
             public Stream GetBufferlessInputStream()
             {
                 return this.Request.GetBufferlessInputStream();
@@ -114,16 +143,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             {
                 if (enc == null)
                 {
-                    enc = Encoding.UTF8;
+                    enc = this.RequestEncoding;
                 }
-
-                var serailizer = new JsonSerializer();
 
                 using (var textReader = new StreamReader(this.GetBufferlessInputStream(), enc))
                 {
                     using (var jsonReader = new JsonTextReader(textReader))
                     {
-                        return serailizer.Deserialize<global::System.Dynamic.ExpandoObject>(jsonReader);
+                        return new JsonSerializer().Deserialize<global::System.Dynamic.ExpandoObject>(jsonReader);
                     }
                 }
             }
@@ -139,7 +166,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                     .Write(data, 0, data.Length);
             }
 
-            #endregion Methods (4)
+            #endregion Methods (6)
         }
     }
 }

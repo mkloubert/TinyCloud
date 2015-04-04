@@ -53,7 +53,6 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Files
             if (long.TryParse(contentLength.Trim(), out length) == false)
             {
                 result.code = 2;
-
                 return;
             }
 
@@ -64,7 +63,7 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Files
                 return;
             }
 
-            var filename = request.Request.Headers["X-TinyCloud-Filename"];
+            var filename = request.GetAppRequestHeader("Filename");
             if (string.IsNullOrWhiteSpace(filename))
             {
                 result.code = 4;
@@ -72,18 +71,21 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Files
                 return;
             }
 
-            filename = filename.Trim();
+            var fullPath = filename.Trim();
 
-            var dir = request.User.GetDataDirectory();
-
-            var targetFile = new FileInfo(Path.Combine(dir.FullName, filename));
-            using (var targetStream = targetFile.Open(FileMode.CreateNew, FileAccess.ReadWrite))
+            var dir = request.User.Directory.FileSystem.GetDirectory(Path.GetDirectoryName(fullPath));
+            if (dir == null)
             {
-                using (var srcStream = request.Request.GetBufferlessInputStream())
-                {
-                    srcStream.CopyTo(targetStream);
-                }
+                result.code = 5;
+
+                return;
             }
+
+            filename = Path.GetFileName(fullPath);
+
+            dir.UploadFile(filename,
+                           request.GetBufferlessInputStream(),
+                           length);
         }
 
         #endregion Methods (1)

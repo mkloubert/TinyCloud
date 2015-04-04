@@ -15,7 +15,9 @@
 //  License along with this library.
 
 using MarcelJoachimKloubert.TinyCloud.SDK.Helpers;
+using MarcelJoachimKloubert.TinyCloud.SDK.IO;
 using MarcelJoachimKloubert.TinyCloud.SDK.IO.Users;
+using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -117,7 +119,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
         #endregion Properties (4)
 
-        #region Methods (7)
+        #region Methods (9)
 
         /// <summary>
         /// Creates an empty, dynamic and exandable object.
@@ -126,6 +128,60 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         protected static dynamic CreateDynamicObject()
         {
             return new global::System.Dynamic.ExpandoObject();
+        }
+
+        /// <summary>
+        /// Returns the directory of a user by path and HTTP request context.
+        /// </summary>
+        /// <param name="request">The HTTP request.</param>
+        /// <param name="path">The path.</param>
+        /// <returns>
+        /// The directory or <see langword="null" /> if not found.
+        /// </returns>
+        protected static IDirectory GetDirectory(IHttpRequest request, string path)
+        {
+            if (request == null)
+            {
+                return null;
+            }
+
+            return GetDirectory(request.User, path);
+        }
+
+        /// <summary>
+        /// Returns the directory of a user by path.
+        /// </summary>
+        /// <param name="user">The user.</param>
+        /// <param name="path">The path.</param>
+        /// <returns>
+        /// The directory or <see langword="null" /> if not found.
+        /// </returns>
+        protected static IDirectory GetDirectory(ICloudPrincipal user, string path)
+        {
+            if (user == null)
+            {
+                return null;
+            }
+
+            var userDir = user.Directory;
+            if (userDir == null)
+            {
+                return null;
+            }
+
+            var fs = userDir.FileSystem;
+            if (fs == null)
+            {
+                return null;
+            }
+
+            path = (path ?? string.Empty).Trim();
+            if (path == string.Empty)
+            {
+                path = "/";
+            }
+
+            return fs.GetDirectory(path);
         }
 
         /// <inheriteddoc />
@@ -359,6 +415,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             }
         }
 
-        #endregion Methods (7)
+        #endregion Methods (9)
     }
 }

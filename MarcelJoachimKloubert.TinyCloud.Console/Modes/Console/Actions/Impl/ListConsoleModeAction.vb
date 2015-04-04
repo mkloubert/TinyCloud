@@ -71,7 +71,7 @@ Public NotInheritable Class ListConsoleModeAction
         request.Method = "POST"
 
         Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
-        requestData("path") = ""
+        requestData("path") = Me.Mode.CurrentDirectory
 
         request.SendJson(requestData)
 

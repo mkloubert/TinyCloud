@@ -26,11 +26,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
     /// </summary>
     public sealed class UserFile : FileBase
     {
-        #region Fields (1)
+        #region Fields (2)
 
         private readonly IDirectory _DIRECTORY;
+        private readonly XElement _XML;
 
-        #endregion Fields (1)
+        #endregion Fields (2)
 
         #region Constructors (1)
 
@@ -44,6 +45,8 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             }
 
             this._DIRECTORY = directory;
+            this._XML = xml;
+
             this.LocalFile = file;
         }
 
@@ -81,13 +84,52 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
         /// <inheriteddoc />
         public override string Name
         {
-            get { return this.LocalFile.Name; }
+            get
+            {
+                string result = null;
+
+                if (this._XML != null)
+                {
+                    var nameAttrib = this._XML.Attribute("name");
+                    if (nameAttrib != null)
+                    {
+                        result = nameAttrib.Value;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(result))
+                {
+                    result = this.LocalFile.Name;
+                }
+
+                return result;
+            }
         }
 
         /// <inheriteddoc />
         public override long? Size
         {
-            get { return GetValueSafe(() => (long?)this.LocalFile.Length); }
+            get
+            {
+                if (this._XML != null)
+                {
+                    string size = null;
+
+                    var sizeElement = this._XML.Element("size");
+                    if (sizeElement != null)
+                    {
+                        size = sizeElement.Value;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(size) == false)
+                    {
+                        return GetValueSafe(() => (long?)long.Parse(size.Trim(),
+                                                                    AppServices.DataCulture));
+                    }
+                }
+
+                return null;
+            }
         }
 
         /// <summary>

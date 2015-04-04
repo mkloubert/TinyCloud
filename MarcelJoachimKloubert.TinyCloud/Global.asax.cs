@@ -62,8 +62,6 @@ namespace MarcelJoachimKloubert.TinyCloud
 
         private void InitRoutes()
         {
-            var routes = RouteTable.Routes;
-
             var asms = new Assembly[] { typeof(global::MarcelJoachimKloubert.TinyCloud.__IDummy).Assembly };
 
             foreach (var type in asms.SelectMany(x => x.GetTypes()))
@@ -86,8 +84,8 @@ namespace MarcelJoachimKloubert.TinyCloud
                         continue;
                     }
 
-                    routes.Add(new Route(url,
-                                         instance));
+                    RouteTable.Routes.Add(new Route(url,
+                                                    instance));
                 }
             }
         }

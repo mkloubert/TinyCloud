@@ -85,6 +85,7 @@
     <Compile Include="Helpers\ConsoleHelper.vb" />
     <Compile Include="Modes\Console\Actions\ConsoleModeActionBase.vb" />
     <Compile Include="Modes\Console\Actions\IConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\ChangeDirConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ClsConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\CreateDirectoryConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ListConsoleModeAction.vb" />

@@ -18,17 +18,26 @@ using System;
 
 namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 {
+    /// <summary>
+    /// An attribute for routing a HTTP handler.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class RouteHttpHandlerAttribute : Attribute
     {
         #region Constructors (1)
-
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RouteHttpHandlerAttribute" /> class.
+        /// </summary>
         public RouteHttpHandlerAttribute()
-            : this(url : null)
+            : this(url: null)
         {
-
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RouteHttpHandlerAttribute" /> class.
+        /// </summary>
+        /// <param name="url">The value for the <see cref="RouteHttpHandlerAttribute.Url" /> property.</param>
         public RouteHttpHandlerAttribute(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
@@ -43,12 +52,15 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             this.Url = url;
         }
 
-        #endregion
+        #endregion Constructors (1)
 
         #region Properties (1)
 
+        /// <summary>
+        /// Gets or sets the URL.
+        /// </summary>
         public string Url { get; set; }
 
-        #endregion
+        #endregion Properties (1)
     }
 }

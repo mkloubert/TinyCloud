@@ -71,18 +71,18 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
         #endregion Properties (1)
 
-        #region Methods (3)
+        #region Methods (4)
 
         /// <inheriteddoc />
         public override IDirectory GetDirectory(string path)
         {
-            path = NormalizePath(path);
-
             IDirectory result = this.Root;
             if (result == null)
             {
                 return null;
             }
+
+            path = NormalizePath(path);
 
             if (path != string.Empty)
             {

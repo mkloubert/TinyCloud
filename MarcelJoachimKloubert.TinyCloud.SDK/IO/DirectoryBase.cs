@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
@@ -25,13 +26,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
     /// </summary>
     public abstract class DirectoryBase : FileSystemObjectBase, IDirectory
     {
-        #region Fields (3)
-        
+        #region Fields (4)
+
         private readonly Func<string, IDirectory> _CREATE_DIRECTORY_FUNC;
         private readonly Func<IEnumerable<IDirectory>> _GET_DIRECTORIES_FUNC;
         private readonly Func<IEnumerable<IFile>> _GET_FILES_FUNC;
+        private readonly Func<string, Stream, long, IFile> _UPLOAD_FILE_FUNC;
 
-        #endregion Fields (2)
+        #endregion Fields (4)
 
         #region Constructors (4)
 
@@ -66,12 +68,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
                 this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory_ThreadSafe;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories_ThreadSafe;
                 this._GET_FILES_FUNC = this.OnGetFiles_ThreadSafe;
+                this._UPLOAD_FILE_FUNC = this.OnUploadFile_ThreadSafe;
             }
             else
             {
                 this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories;
                 this._GET_FILES_FUNC = this.OnGetFiles;
+                this._UPLOAD_FILE_FUNC = this.OnUploadFile;
             }
         }
 
@@ -93,8 +97,8 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 
         #endregion Properties (3)
 
-        #region Methods (10)
-        
+        #region Methods (15)
+
         /// <inheriteddoc />
         public IDirectory CreateDirectory(string name)
         {
@@ -109,12 +113,39 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
                 throw new FormatException("name");
             }
 
+            var invalidChars = this.GetInvalidCharsForDirectoryNames();
+            if (invalidChars != null)
+            {
+                if (name.Intersect(invalidChars).Any())
+                {
+                    throw new FormatException();
+                }
+            }
+
             if (this.GetDirectories().Any(x => x.Name == name))
             {
                 throw new ArgumentException("name");
             }
 
             return this._CREATE_DIRECTORY_FUNC(name);
+        }
+
+        /// <inheriteddoc />
+        public bool DirectoryExists(string name)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException("name");
+            }
+
+            name = name.Trim();
+            if (name == string.Empty)
+            {
+                throw new ArgumentException("name");
+            }
+
+            return this.GetDirectories()
+                       .Any(x => x.Name == name);
         }
 
         /// <inheriteddoc />
@@ -148,7 +179,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         /// <param name="name">The name of the new directory.</param>
         /// <returns>The created directory.</returns>
         protected abstract IDirectory OnCreateDirectory(string name);
-        
+
         private IDirectory OnCreateDirectory_ThreadSafe(string name)
         {
             IDirectory result;
@@ -197,6 +228,74 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             return result;
         }
 
-        #endregion Methods (7)
+        /// <summary>
+        /// The logic for the <see cref="DirectoryBase.UploadFile(string, Stream, long)" /> method.
+        /// </summary>
+        /// <param name="name">The name of the new file.</param>
+        /// <param name="src">The data of the source.</param>
+        /// <param name="bytesToRead">The number of bytes to read.</param>
+        /// <returns>The uploaded file.</returns>
+        protected abstract IFile OnUploadFile(string name, Stream src, long bytesToRead);
+
+        private IFile OnUploadFile_ThreadSafe(string name, Stream src, long bytesToRead)
+        {
+            IFile result;
+
+            lock (this._SYNC)
+            {
+                result = this.OnUploadFile(name, src, bytesToRead);
+            }
+
+            return result;
+        }
+
+        /// <inheriteddoc />
+        public abstract string GetInvalidCharsForDirectoryNames();
+
+        /// <inheriteddoc />
+        public abstract string GetInvalidCharsForFileNames();
+
+        /// <inheriteddoc />
+        public IFile UploadFile(string name, Stream src, long bytesToRead)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException("name");
+            }
+
+            if (src == null)
+            {
+                throw new ArgumentNullException("src");
+            }
+
+            if (bytesToRead < 0)
+            {
+                throw new ArgumentOutOfRangeException("bytesToRead");
+            }
+
+            name = name.Trim();
+            if (name == string.Empty)
+            {
+                throw new FormatException("name");
+            }
+
+            var invalidChars = this.GetInvalidCharsForFileNames();
+            if (invalidChars != null)
+            {
+                if (name.Intersect(invalidChars).Any())
+                {
+                    throw new FormatException();
+                }
+            }
+
+            if (this.GetFiles().Any(x => x.Name == name))
+            {
+                throw new ArgumentException("name");
+            }
+
+            return this._UPLOAD_FILE_FUNC(name, src, bytesToRead);
+        }
+
+        #endregion Methods (15)
     }
 }

@@ -82,7 +82,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
         /// <exception cref="ArgumentException">
         /// <paramref name="action" /> is invalid.
         /// </exception>
-        public WebRequest CreateApiRequest(string action)
+        public HttpWebRequest CreateApiRequest(string action)
         {
             if (action == null)
             {

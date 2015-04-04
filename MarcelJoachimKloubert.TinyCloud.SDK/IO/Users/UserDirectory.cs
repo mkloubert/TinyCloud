@@ -14,11 +14,14 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.Helpers;
 using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -29,7 +32,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
     /// </summary>
     public sealed class UserDirectory : DirectoryBase
     {
-        #region Fields (5)
+        #region Fields (8)
 
         private readonly IDirectory _PARENT;
         private readonly XElement _XML;
@@ -45,6 +48,11 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
         public const string XML_ATTRIB_REAL_DIRECTORY = "realDir";
 
         /// <summary>
+        /// Stores the name of an attributes for a "real" file name.
+        /// </summary>
+        public const string XML_ATTRIB_REAL_FILE = "realFile";
+
+        /// <summary>
         /// Stores the name of an element with directory information.
         /// </summary>
         public const string XML_ELEMENT_DIRECTORY = "dir";
@@ -54,7 +62,17 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
         /// </summary>
         public const string XML_ELEMENT_DIRECTORY_LIST = "dirs";
 
-        #endregion Fields (5)
+        /// <summary>
+        /// Stores the name of an element with file information.
+        /// </summary>
+        public const string XML_ELEMENT_FILE = "file";
+
+        /// <summary>
+        /// Stores the name of an elements that contains file elements.
+        /// </summary>
+        public const string XML_ELEMENT_FILE_LIST = "files";
+
+        #endregion Fields (8)
 
         #region Constructors (1)
 
@@ -152,7 +170,19 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
         #endregion Properties (7)
 
-        #region Methods (7)
+        #region Methods (10)
+
+        /// <inheriteddoc />
+        public override string GetInvalidCharsForDirectoryNames()
+        {
+            return new string(Path.GetInvalidFileNameChars());
+        }
+
+        /// <inheriteddoc />
+        public override string GetInvalidCharsForFileNames()
+        {
+            return new string(Path.GetInvalidFileNameChars());
+        }
 
         private FileInfo GetMetaFile()
         {
@@ -178,13 +208,16 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
                 {
                     using (var cryptedStream = metaFile.OpenRead())
                     {
-                        using (var uncryptedStream = new MemoryStream())
+                        using (var compressedStream = new MemoryStream())
                         {
                             this.User
-                                .Decrypt(cryptedStream, uncryptedStream);
+                                .Decrypt(cryptedStream, compressedStream);
 
-                            uncryptedStream.Position = 0;
-                            result = XDocument.Load(uncryptedStream).Root;
+                            compressedStream.Position = 0;
+                            using (var gzip = new GZipStream(compressedStream, CompressionMode.Decompress, true))
+                            {
+                                result = XDocument.Load(gzip).Root;
+                            }
                         }
                     }
                 }
@@ -296,20 +329,20 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
         protected override IEnumerable<IFile> OnGetFiles()
         {
             return this.GetMetaXml()
-                       .XPathSelectElements("files/file")
+                       .XPathSelectElements(XML_ELEMENT_FILE_LIST + "/" + XML_ELEMENT_FILE)
                        .Select(x =>
                        {
                            IFile file = null;
 
                            try
                            {
-                               var nameAttrib = x.Attribute("name");
+                               var nameAttrib = x.Attribute(XML_ATTRIB_NAME);
                                if (nameAttrib != null)
                                {
                                    var name = (nameAttrib.Value ?? string.Empty).Trim();
                                    if (name != string.Empty)
                                    {
-                                       var realFileAttrib = x.Attribute("realFile");
+                                       var realFileAttrib = x.Attribute(XML_ATTRIB_REAL_FILE);
                                        if (realFileAttrib != null)
                                        {
                                            var realFile = (realFileAttrib.Value ?? string.Empty).Trim();
@@ -334,6 +367,145 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
                            return file;
                        });
+        }
+
+        /// <inheriteddoc />
+        protected override IFile OnUploadFile(string name, Stream src, long bytesToRead)
+        {
+            var xml = this.GetMetaXml();
+
+            FileStream destStream = null;
+
+            // find next unique and "real" directory
+            ulong i = 1;
+            FileInfo fi;
+            do
+            {
+                fi = new FileInfo(Path.Combine(this.LocalDirectory.FullName,
+                                               i.ToString() + ".bin"));
+
+                if (fi.Exists == false)
+                {
+                    destStream = fi.Open(FileMode.CreateNew, FileAccess.ReadWrite);
+
+                    break;
+                }
+            }
+            while (++i > 0);
+
+            XElement newFileElement = null;
+
+            try
+            {
+                fi.Refresh();
+
+                var filesElement = xml.Element(XML_ELEMENT_FILE_LIST);
+                if (filesElement == null)
+                {
+                    filesElement = new XElement(XML_ELEMENT_FILE_LIST);
+                    xml.Add(filesElement);
+                }
+
+                newFileElement = new XElement(XML_ELEMENT_FILE);
+                newFileElement.SetAttributeValue(XML_ATTRIB_NAME, name);
+                newFileElement.SetAttributeValue(XML_ATTRIB_REAL_FILE, fi.Name);
+
+                var rand = new Random();
+                var rng = new RNGCryptoServiceProvider();
+
+                // password
+                var pwd = new byte[64];
+                {
+                    rng.GetBytes(pwd);
+
+                    var newPasswordElement = new XElement("password");
+                    newPasswordElement.Value = Convert.ToBase64String(pwd);
+
+                    newFileElement.Add(newPasswordElement);
+                }
+
+                // salt
+                var salt = new byte[16];
+                {
+                    rng.GetBytes(salt);
+
+                    var newSaltElement = new XElement("salt");
+                    newSaltElement.Value = Convert.ToBase64String(salt);
+
+                    newFileElement.Add(newSaltElement);
+                }
+
+                // iterations
+                var iterations = rand.Next(1000, 2000);
+                {
+                    var newIterationsElement = new XElement("iterations");
+                    newIterationsElement.Value = iterations.ToString();
+
+                    newFileElement.Add(newIterationsElement);
+                }
+
+                long bytesWritten = 0;
+
+                using (destStream)
+                {
+                    var cs = CryptoHelper.CreateCryptoStream(destStream, CryptoStreamMode.Write,
+                                                             pwd, salt, iterations);
+
+                    try
+                    {
+                        while (bytesToRead > 0)
+                        {
+                            var bufferSize = 81920L;
+                            if (bufferSize > bytesToRead)
+                            {
+                                bufferSize = bytesToRead;
+                            }
+
+                            var buffer = new byte[bufferSize];
+
+                            var bytesReadFromSrc = src.Read(buffer, 0, buffer.Length);
+                            if (bytesReadFromSrc < 1)
+                            {
+                                break;
+                            }
+
+                            cs.Write(buffer, 0, bytesReadFromSrc);
+                            bytesWritten += bytesReadFromSrc;
+
+                            bytesToRead -= bytesReadFromSrc;
+                        }
+                    }
+                    finally
+                    {
+                        cs.FlushFinalBlock();
+                    }
+                }
+
+                // size
+                {
+                    var newSizeElement = new XElement("size");
+                    newSizeElement.Value = bytesWritten.ToString();
+
+                    newFileElement.Add(newSizeElement);
+                }
+
+                filesElement.Add(newFileElement);
+
+                this.UpdateMetaXml(xml);
+            }
+            catch
+            {
+                using (var ds = destStream)
+                {
+                    destStream = null;
+                }
+
+                fi.Delete();
+
+                throw;
+            }
+
+            return new UserFile(this.FileSystem, fi, newFileElement, this);
         }
 
         private void UpdateMetaXml(XElement xml)
@@ -372,13 +544,19 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
                 // save XML
                 using (var cryptedStream = metaFile.Open(FileMode.CreateNew, FileAccess.ReadWrite))
                 {
-                    using (var uncryptedStream = new MemoryStream())
+                    using (var compressedStream = new MemoryStream())
                     {
-                        xml.Save(uncryptedStream);
+                        using (var gzip = new GZipStream(compressedStream, CompressionMode.Compress, true))
+                        {
+                            xml.Save(gzip);
 
-                        uncryptedStream.Position = 0;
+                            gzip.Flush();
+                            gzip.Close();
+                        }
+
+                        compressedStream.Position = 0;
                         this.User
-                            .Encrypt(uncryptedStream, cryptedStream);
+                            .Encrypt(compressedStream, cryptedStream);
                     }
                 }
 
@@ -414,6 +592,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             }
         }
 
-        #endregion Methods (7)
+        #endregion Methods (10)
     }
 }

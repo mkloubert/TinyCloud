@@ -61,19 +61,22 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
 
             if (requestData.ContainsKey("path") == false)
             {
-                result.code = 2;
+                // no path defined (property not found)
 
+                result.code = 2;
                 return;
             }
 
             var path = (requestData["path"].AsString() ?? string.Empty).Trim();
             if (path == string.Empty)
             {
-                result.code = 3;
+                // no path defined (no value)
 
+                result.code = 3;
                 return;
             }
 
+            // remove ending 
             while (path.EndsWith("/"))
             {
                 path = path.Substring(0, path.Length - 1);
@@ -84,25 +87,47 @@ namespace MarcelJoachimKloubert.TinyCloud.Handlers.Directories
                 path = "/" + path;
             }
 
-            var parts = path.Split('/');
-            if (parts.Length < 2)
+            var parts = path.Split('/')
+                            .Where(x => string.IsNullOrWhiteSpace(x) == false)
+                            .ToList();
+            if (parts.Count < 1)
             {
-                result.code = 4;
+                // no directory defined
 
+                result.code = 4;
                 return;
             }
 
             var fullPath = "/" + string.Join("/",
-                                             parts.Take(parts.Length - 1));
-            var dir = request.User.Directory.FileSystem.GetDirectory(fullPath);
+                                             parts.Take(parts.Count - 1));
+            var dir = GetDirectory(request, fullPath);
             if (dir == null)
             {
-                result.code = 404;
+                // parent directory not found
 
+                result.code = 404;
                 return;
             }
 
-            dir.CreateDirectory(parts.Last());
+            var newDir = parts.Last();
+            if (string.IsNullOrWhiteSpace(newDir))
+            {
+                // invalid value
+
+                result.code = 5;
+                return;
+            }
+
+            newDir = newDir.Trim();
+            if (dir.DirectoryExists(newDir))
+            {
+                // directory already exists
+
+                result.code = 6;
+                return;
+            }
+
+            dir.CreateDirectory(newDir);
         }
 
         #endregion Methods (1)

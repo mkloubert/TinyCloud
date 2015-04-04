@@ -19,6 +19,7 @@ Imports MarcelJoachimKloubert.TinyCloud.SDK
 Imports System.ComponentModel.Composition
 Imports SysConsole = System.Console
 Imports System.Net
+Imports System.IO
 
 <Export(GetType(Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction))>
 <PartCreationPolicy(CreationPolicy.NonShared)>
@@ -42,7 +43,7 @@ Public NotInheritable Class CreateDirectoryConsoleModeAction
     ''' </summary>
     Public Overrides ReadOnly Property Names As IEnumerable(Of String)
         Get
-            Return New String() {"mkdir"}
+            Return New String() {"mkdir", "md"}
         End Get
     End Property
 
@@ -63,21 +64,65 @@ Public NotInheritable Class CreateDirectoryConsoleModeAction
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
     Public Overrides Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
-        Dim request As WebRequest = conn.CreateApiRequest("create-directory")
-        request.Method = "POST"
+        For Each a As String In args
+            If String.IsNullOrWhiteSpace(a) Then
+                Continue For
+            End If
 
-        Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
-        requestData("path") = args(0)
+            Try
+                Dim newDir As String = a.Trim()
 
-        request.SendJson(requestData)
+                If Not Path.IsPathRooted(newDir) Then
+                    newDir = Path.Combine(Me.Mode.CurrentDirectory, newDir)
+                End If
 
-        Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-        If response Is Nothing Then
-            Return
-        End If
+                Dim request As WebRequest = conn.CreateApiRequest("create-directory")
+                request.Method = "POST"
 
-        Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
-                                                 AppServices.DataCulture)
+                Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
+                requestData("path") = newDir
+
+                request.SendJson(requestData)
+
+                Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
+                If response Is Nothing Then
+                    Return
+                End If
+
+                Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
+                                                         AppServices.DataCulture)
+
+                Select Case code
+                    Case 0
+                        SysConsole.Write("Directory ")
+
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write(newDir)
+                                                     End Sub, ConsoleColor.White)
+
+                        SysConsole.Write(" was created successfully.")
+                        Exit Select
+
+                    Case 6
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write("Directory ")
+                                                     End Sub, ConsoleColor.Yellow)
+
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write(newDir)
+                                                     End Sub, ConsoleColor.White)
+
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write(" already exists.")
+                                                     End Sub, ConsoleColor.Yellow)
+                        Exit Select
+                End Select
+
+                SysConsole.WriteLine()
+            Catch ex As Exception
+                ShowException(ex)
+            End Try
+        Next
     End Sub
 
 #End Region

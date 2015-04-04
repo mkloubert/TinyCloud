@@ -78,7 +78,7 @@ Public NotInheritable Class UploadFileConsoleAction
                     actionToInvoke(conn, a)
                 End If
             Catch ex As Exception
-
+                ShowException(ex)
             End Try
         Next
     End Sub
@@ -95,10 +95,13 @@ Public NotInheritable Class UploadFileConsoleAction
             request.Method = "POST"
 
             request.ContentLength = s.Length
-            request.Headers("X-TinyCloud-Filename") = f.Name
+            request.Headers("X-TinyCloud-Filename") = Me.Mode.CurrentDirectory & "/" & f.Name
 
             Using rs As Stream = request.GetRequestStream()
                 s.CopyTo(rs)
+
+                rs.Flush()
+                rs.Close()
             End Using
 
             Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()

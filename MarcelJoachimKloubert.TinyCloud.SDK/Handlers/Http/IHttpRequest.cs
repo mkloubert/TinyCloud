@@ -27,7 +27,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
     /// </summary>
     public interface IHttpRequest : ICloudObject
     {
-        #region Properties (8)
+        #region Properties (9)
 
         /// <summary>
         /// Gets the underlying context.
@@ -55,6 +55,11 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         HttpRequest Request { get; }
 
         /// <summary>
+        /// Gets the encoding of the request data.
+        /// </summary>
+        Encoding RequestEncoding { get; }
+
+        /// <summary>
         /// Gets the response context.
         /// </summary>
         HttpResponse Response { get; }
@@ -71,7 +76,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
         #endregion Properties (8)
 
-        #region Methods (7)
+        #region Methods (6)
 
         /// <summary>
         /// A application specific header.
@@ -88,6 +93,13 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <param name="value">The value of the header.</param>
         /// <returns>That instance.</returns>
         IHttpRequest AddResponseHeader(string name, object value);
+
+        /// <summary>
+        /// Returns an app specific request header.
+        /// </summary>
+        /// <param name="name">The name of the header.</param>
+        /// <returns>The value or <see langword="null" /> if not found.</returns>
+        string GetAppRequestHeader(string name);
 
         /// <summary>
         /// <see cref="HttpRequest.GetBufferlessInputStream()" />.
@@ -107,6 +119,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <param name="data">The data to write.</param>
         void Write(byte[] data);
 
-        #endregion Methods (7)
+        #endregion Methods (6)
     }
 }
