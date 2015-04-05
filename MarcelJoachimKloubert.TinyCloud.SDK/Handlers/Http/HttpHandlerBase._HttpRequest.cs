@@ -33,7 +33,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
             internal const string APP_HEADER_NAME_PREFIX = "X-TinyCloud-";
 
-            #endregion
+            #endregion Fields (1)
 
             #region Properties (9)
 
@@ -91,11 +91,11 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 internal set;
             }
 
-            #endregion Properties (8)
+            #endregion Properties (9)
 
-            #region Methods (6)
+            #region Methods (7)
 
-            public IHttpRequest AddAppReponseHeader(string name, object value)
+            public IHttpRequest AddAppResponseHeader(string name, object value)
             {
                 if (string.IsNullOrWhiteSpace(name) == false)
                 {
@@ -155,6 +155,19 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                 }
             }
 
+            public string GetRequestBodyAsString(Encoding enc = null)
+            {
+                if (enc == null)
+                {
+                    enc = this.RequestEncoding;
+                }
+
+                using (var reader = new StreamReader(this.GetBufferlessInputStream(), enc))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+
             public void Write(byte[] data)
             {
                 if (data == null)
@@ -166,7 +179,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                     .Write(data, 0, data.Length);
             }
 
-            #endregion Methods (6)
+            #endregion Methods (7)
         }
     }
 }

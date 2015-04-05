@@ -67,16 +67,16 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <summary>
         /// Gets or sets the status code by enumeration value.
         /// </summary>
-        HttpStatusCode StatusCode { get; }
+        HttpStatusCode StatusCode { get; set; }
 
         /// <summary>
         /// Gets the requesting user.
         /// </summary>
         ICloudPrincipal User { get; }
 
-        #endregion Properties (8)
+        #endregion Properties (9)
 
-        #region Methods (6)
+        #region Methods (7)
 
         /// <summary>
         /// A application specific header.
@@ -84,7 +84,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <param name="name">The name of the header to add.</param>
         /// <param name="value">The value of the header.</param>
         /// <returns>That instance.</returns>
-        IHttpRequest AddAppReponseHeader(string name, object value);
+        IHttpRequest AddAppResponseHeader(string name, object value);
 
         /// <summary>
         /// Adds a response header.
@@ -102,7 +102,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         string GetAppRequestHeader(string name);
 
         /// <summary>
-        /// <see cref="HttpRequest.GetBufferlessInputStream()" />.
+        /// <see cref="HttpRequest.GetBufferlessInputStream()" />
         /// </summary>
         Stream GetBufferlessInputStream();
 
@@ -110,8 +110,15 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// Handles the request body data as JSON.
         /// </summary>
         /// <param name="enc">The custom encoding to use.</param>
-        /// <returns>The request body data JSON data.</returns>
+        /// <returns>The request body data as JSON data.</returns>
         dynamic GetRequestBodyAsJson(Encoding enc = null);
+
+        /// <summary>
+        /// Handles the request body data as string.
+        /// </summary>
+        /// <param name="enc">The custom encoding to use.</param>
+        /// <returns>The request body data as string.</returns>
+        string GetRequestBodyAsString(Encoding enc = null);
 
         /// <summary>
         /// Writes data to <see cref="IHttpRequest.OutputStream" />.
@@ -119,6 +126,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         /// <param name="data">The data to write.</param>
         void Write(byte[] data);
 
-        #endregion Methods (6)
+        #endregion Methods (7)
     }
 }

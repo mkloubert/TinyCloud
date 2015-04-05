@@ -14,9 +14,12 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.Helpers;
 using MarcelJoachimKloubert.TinyCloud.SDK.Security;
 using System;
 using System.IO;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Xml.Linq;
 
 namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
@@ -52,7 +55,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
         #endregion Constructors (1)
 
-        #region Properties (7)
+        #region Properties (8)
 
         /// <inheriteddoc />
         public override IDirectory Directory
@@ -140,6 +143,113 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             get { return this.FileSystem.User; }
         }
 
-        #endregion Properties (7)
+        /// <summary>
+        /// Gets the underlying XML data.
+        /// </summary>
+        public XElement Xml
+        {
+            get { return this._XML; }
+        }
+
+        #endregion Properties (8)
+
+        #region Methods (4)
+
+        private CryptoStream CreateCryptoStream(Stream baseStream, CryptoStreamMode mode)
+        {
+            byte[] pwd;
+            byte[] salt;
+            int iterations;
+            this.GetCrypterData(out pwd, out salt, out iterations);
+
+            return CryptoHelper.CreateCryptoStream(baseStream, CryptoStreamMode.Read,
+                                                   pwd, salt, iterations);
+        }
+
+        private void GetCrypterData(out byte[] pwd, out byte[] salt, out int iterations)
+        {
+            pwd = null;
+            salt = null;
+            iterations = int.MinValue;
+
+            if (this.Xml == null)
+            {
+                return;
+            }
+
+            var passwordElement = this.Xml.Element("password");
+            if (passwordElement != null &&
+                string.IsNullOrWhiteSpace(passwordElement.Value) == false)
+            {
+                pwd = Convert.FromBase64String(passwordElement.Value.Trim());
+            }
+
+            var saltElement = this.Xml.Element("salt");
+            if (saltElement != null &&
+                string.IsNullOrWhiteSpace(saltElement.Value) == false)
+            {
+                salt = Convert.FromBase64String(saltElement.Value.Trim());
+            }
+
+            var iterationsElement = this.Xml.Element("iterations");
+            if (iterationsElement != null &&
+                string.IsNullOrWhiteSpace(iterationsElement.Value) == false)
+            {
+                iterations = Convert.ToInt32(iterationsElement.Value.Trim(),
+                                             AppServices.DataCulture);
+            }
+        }
+
+        /// <inheriteddoc />
+        protected override void OnDelete()
+        {
+            this.LocalFile.Refresh();
+            if (this.LocalFile.Exists)
+            {
+                this.LocalFile.Delete();
+                this.LocalFile.Refresh();
+            }
+
+            if (this.Xml != null)
+            {
+                var xmlDoc = this.Xml.Document;
+                this.Xml.Remove();
+
+                var dir = this.Directory as UserDirectory;
+                if (dir != null &&
+                    xmlDoc != null)
+                {
+                    dir.UpdateMetaXml(xmlDoc.Root);
+                }
+            }
+        }
+
+        /// <inheriteddoc />
+        protected override Stream OnDownload()
+        {
+            var fileStream = this.LocalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+            try
+            {
+                var cs = this.CreateCryptoStream(fileStream, CryptoStreamMode.Read);
+                try
+                {
+                    return new GZipStream(cs, CompressionMode.Decompress, false);
+                }
+                catch
+                {
+                    cs.Dispose();
+
+                    throw;
+                }
+            }
+            catch
+            {
+                fileStream.Dispose();
+
+                throw;
+            }
+        }
+
+        #endregion Methods (4)
     }
 }

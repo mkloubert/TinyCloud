@@ -67,66 +67,99 @@ Public NotInheritable Class ListConsoleModeAction
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
     Public Overrides Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
-        Dim request As WebRequest = conn.CreateApiRequest("list")
-        request.Method = "POST"
+        args = args.Where(Function(x) Not String.IsNullOrWhiteSpace(x)) _
+                   .ToList()
 
-        Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
-        requestData("path") = Me.Mode.CurrentDirectory
-
-        request.SendJson(requestData)
-
-        Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-        If response Is Nothing Then
-            Return
+        If args.Count < 1 Then
+            args.Add(Me.Mode.CurrentDirectory)
         End If
 
-        Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
-                                                 AppServices.DataCulture)
+        For Each a As String In args.Select(Function(x) Me.GetFullPath(x))
+            Try
+                Dim request As WebRequest = conn.CreateApiRequest("list")
+                request.Method = "POST"
 
-        Select Case code
-            Case 0
-                Dim data As IDictionary(Of String, Object) = response("data")
-                If data Is Nothing Then
+                Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
+                requestData("path") = a
+
+                request.SendJson(requestData)
+
+                Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
+                If response Is Nothing Then
                     Return
                 End If
 
-                SysConsole.WriteLine("Directory: {0}", data("path"))
+                Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
+                                                         AppServices.DataCulture)
 
-                SysConsole.WriteLine()
+                Select Case code
+                    Case 0
+                        Dim data As IDictionary(Of String, Object) = response("data")
+                        If data Is Nothing Then
+                            Return
+                        End If
 
-                For Each subDir In DirectCast(data("dirs"), IEnumerable).OfType(Of Object)() _
-                                                                        .OrderBy(Function(x) CType(x.name, String), StringComparer.InvariantCultureIgnoreCase)
+                        SysConsole.Write("Directory: ")
 
-                    Dim name As String = subDir.name
-                    Dim lastWriteTime As Date = subDir.lastWriteTime
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.WriteLine(data("path"))
+                                                     End Sub, ConsoleColor.White)
 
-                    SysConsole.Write("{0:yyyy-MM-dd}  {0:HH:mm:ss}", lastWriteTime)
-                    SysConsole.Write("    ")
-                    SysConsole.Write("<DIR>".PadRight(14, " "))
-                    SysConsole.Write("  {0}", name)
+                        SysConsole.WriteLine()
 
-                    SysConsole.WriteLine()
-                Next
+                        For Each subDir In DirectCast(data("dirs"), IEnumerable).OfType(Of Object)() _
+                                                                                .OrderBy(Function(x) CType(x.name, String), AppServices.GetStringComparer())
 
-                For Each file In DirectCast(data("files"), IEnumerable).OfType(Of Object)() _
-                                                                       .OrderBy(Function(x) CType(x.name, String), StringComparer.InvariantCultureIgnoreCase)
+                            Dim name As String = subDir.name
+                            Dim lastWriteTime As Date = subDir.lastWriteTime
 
-                    Dim name As String = file.name
-                    Dim lastWriteTime As Date = file.lastWriteTime
-                    Dim size As Long = file.size
+                            SysConsole.Write("{0:yyyy-MM-dd}  {0:HH:mm:ss}", lastWriteTime)
+                            SysConsole.Write("    ")
+                            SysConsole.Write("<DIR>".PadRight(14, " "))
+                            SysConsole.Write("  {0}", name)
 
-                    SysConsole.Write("{0:yyyy-MM-dd}  {0:HH:mm:ss}", lastWriteTime)
-                    SysConsole.Write("    {0}", size.ToString("n0", AppServices.DataCulture) _
-                                                    .PadLeft(14))
-                    SysConsole.Write("  {0}", name)
+                            SysConsole.WriteLine()
+                        Next
 
-                    SysConsole.WriteLine()
-                Next
-                Exit Select
+                        For Each file In DirectCast(data("files"), IEnumerable).OfType(Of Object)() _
+                                                                               .OrderBy(Function(x) CType(x.name, String), AppServices.GetStringComparer())
 
-            Case 404
-                Exit Select
-        End Select
+                            Dim name As String = file.name
+                            Dim lastWriteTime As Date = file.lastWriteTime
+                            Dim size As Long = file.size
+
+                            SysConsole.Write("{0:yyyy-MM-dd}  {0:HH:mm:ss}", lastWriteTime)
+                            SysConsole.Write("    {0}", size.ToString("n0", AppServices.DataCulture) _
+                                                            .PadLeft(14))
+                            SysConsole.Write("  {0}", name)
+
+                            SysConsole.WriteLine()
+                        Next
+
+                        SysConsole.WriteLine()
+                        Exit Select
+
+                    Case 404
+                        '' directory not found
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write("The directory ")
+                                                     End Sub, ConsoleColor.Yellow)
+
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write(a)
+                                                     End Sub, ConsoleColor.White)
+
+                        ConsoleHelper.InvokeForColor(Sub()
+                                                         SysConsole.Write(" does not exist!")
+
+                                                         SysConsole.WriteLine()
+                                                     End Sub, ConsoleColor.Yellow)
+                        Exit Select
+                End Select
+            Catch ex As Exception
+                ShowException(ex)
+            End Try
+        Next
     End Sub
 
 #End Region

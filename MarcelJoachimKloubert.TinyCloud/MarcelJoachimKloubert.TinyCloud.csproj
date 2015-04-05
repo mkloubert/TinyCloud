@@ -77,8 +77,10 @@
     <Compile Include="Handlers\Directories\CreateDirectoryHttpHandler.cs" />
     <Compile Include="Handlers\Directories\ListHttpHandler.cs" />
     <Compile Include="Handlers\Files\FileHttpHandler.cs" />
+    <Compile Include="Handlers\Files\DownloadFileHttpHandler.cs" />
     <Compile Include="Handlers\Files\UploadFileHttpHandler.cs" />
     <Compile Include="Handlers\HelloHttpHandler.cs" />
+    <Compile Include="Handlers\RemoveHttpHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="__IDummy.cs" />
   </ItemGroup>

@@ -57,6 +57,7 @@
     <Compile Include="CloudConnectionObjectBase.cs" />
     <Compile Include="CloudDisposableBase.cs" />
     <Compile Include="CloudObjectBase.cs" />
+    <Compile Include="Collections\Concurrency\UserSyncCollection.cs" />
     <Compile Include="Extensions\Encryption.cs" />
     <Compile Include="Extensions\Values.cs" />
     <Compile Include="Extensions\Web.cs" />

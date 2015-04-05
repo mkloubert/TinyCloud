@@ -22,6 +22,7 @@ Imports System.ComponentModel.Composition.Hosting
 Imports System.Linq
 Imports System.ComponentModel.Composition
 Imports SysConsole = System.Console
+Imports System.IO
 
 ''' <summary>
 ''' Console mode.
@@ -29,11 +30,12 @@ Imports SysConsole = System.Console
 Public NotInheritable Class ConsoleMode
     Inherits ModeBase
 
-#Region "Fields (3)"
+#Region "Fields (4)"
 
     Private ReadOnly _CONN As CloudConnection
     Private ReadOnly _CONTAINER As CompositionContainer
     Private _currentDirectory As String
+    Private _currentLocalDirectory As DirectoryInfo
 
 #End Region
 
@@ -54,11 +56,12 @@ Public NotInheritable Class ConsoleMode
         Me._CONTAINER.ComposeExportedValue(Of ConsoleMode)(Me)
 
         Me.CurrentDirectory = Nothing
+        Me.CurrentLocalDirectory = Nothing
     End Sub
 
 #End Region
 
-#Region "Properties (1)"
+#Region "Properties (2)"
 
     ''' <summary>
     ''' Gets or sets the current directory.
@@ -76,6 +79,25 @@ Public NotInheritable Class ConsoleMode
             End If
 
             Me._currentDirectory = value
+        End Set
+    End Property
+
+    ''' <summary>
+    ''' Gets or sets the current local directory.
+    ''' </summary>
+    Public Property CurrentLocalDirectory As DirectoryInfo
+        Get
+            Return Me._currentLocalDirectory
+        End Get
+
+        Set(value As DirectoryInfo)
+            If value Is Nothing Then
+                value = New DirectoryInfo(Environment.CurrentDirectory)
+            End If
+
+            value.Refresh()
+
+            Me._currentLocalDirectory = value
         End Set
     End Property
 

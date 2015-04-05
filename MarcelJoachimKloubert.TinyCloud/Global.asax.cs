@@ -15,6 +15,8 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using MarcelJoachimKloubert.TinyCloud.SDK;
+using MarcelJoachimKloubert.TinyCloud.SDK.Collections.Concurrency;
+using MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http;
 using System;
 using System.Configuration;
 using System.Linq;
@@ -62,6 +64,8 @@ namespace MarcelJoachimKloubert.TinyCloud
 
         private void InitRoutes()
         {
+            this.Application[HttpHandlerBase.APP_VAR_USER_SYNC_COLLECTION] = new UserSyncCollection();
+
             var asms = new Assembly[] { typeof(global::MarcelJoachimKloubert.TinyCloud.__IDummy).Assembly };
 
             foreach (var type in asms.SelectMany(x => x.GetTypes()))

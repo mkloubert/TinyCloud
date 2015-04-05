@@ -23,7 +23,7 @@ Imports System.IO
 
 <Export(GetType(Global.MarcelJoachimKloubert.TinyCloud.Console.IConsoleModeAction))>
 <PartCreationPolicy(CreationPolicy.NonShared)>
-Public NotInheritable Class ChangeDirConsoleModeAction
+Public NotInheritable Class ChangeDirLocalConsoleModeAction
     Inherits ConsoleModeActionBase
 
 #Region "Constructors (1)"
@@ -43,7 +43,7 @@ Public NotInheritable Class ChangeDirConsoleModeAction
     ''' </summary>
     Public Overrides ReadOnly Property Names As IEnumerable(Of String)
         Get
-            Return New String() {"cd", "chdir"}
+            Return New String() {"cd-local", "chdir-local"}
         End Get
     End Property
 
@@ -52,7 +52,7 @@ Public NotInheritable Class ChangeDirConsoleModeAction
     ''' </summary>
     Public Overrides ReadOnly Property ShortDescription As String
         Get
-            Return "Changes the directory."
+            Return "Changes the local directory."
         End Get
     End Property
 
@@ -67,19 +67,16 @@ Public NotInheritable Class ChangeDirConsoleModeAction
         Dim newDir As String = args.FirstOrDefault(Function(x) Not String.IsNullOrWhiteSpace(x))
 
         If String.IsNullOrWhiteSpace(newDir) Then
-            SysConsole.Write("Current directory is: ")
+            SysConsole.Write("Current local directory is: ")
 
             ConsoleHelper.InvokeForColor(Sub()
-                                             SysConsole.WriteLine(Me.Mode.CurrentDirectory)
+                                             SysConsole.WriteLine(Me.Mode.CurrentLocalDirectory.FullName)
                                          End Sub, ConsoleColor.White)
 
             Return
         End If
 
-        Dim currentDir As String = Me.Mode.CurrentDirectory
-        If String.IsNullOrWhiteSpace(currentDir) Then
-            currentDir = "/"
-        End If
+        Dim currentDir As DirectoryInfo = Me.Mode.CurrentLocalDirectory
 
         newDir = newDir.Trim()
 
@@ -91,61 +88,38 @@ Public NotInheritable Class ChangeDirConsoleModeAction
         If newDir = ".." Then
             '' go up
 
-            Dim parts As String() = currentDir.Split("/") _
-                                              .Where(Function(x) Not String.IsNullOrWhiteSpace(x)) _
-                                              .ToArray()
-
-            Me.Execute(conn, cmd, _
-                       New List(Of String) From {"/" & String.Join("/", _
-                                                                   parts.Take(parts.Length - 1))})
+            Dim parent As DirectoryInfo = currentDir.Parent
+            If parent IsNot Nothing Then
+                Me.Mode.CurrentLocalDirectory = parent
+            End If
 
             Return
         End If
 
-        Dim request As WebRequest = conn.CreateApiRequest("list")
-        request.Method = "POST"
+        If Not Path.IsPathRooted(newDir) Then
+            newDir = Path.Combine(currentDir.FullName, newDir)
+        End If
 
-        Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
-        requestData("path") = Me.GetFullPath(newDir)
-        requestData("test") = True
+        newDir = Path.GetFullPath(newDir)
 
-        request.SendJson(requestData)
-
-        Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-        If response Is Nothing Then
+        If Directory.Exists(newDir) Then
+            Me.Mode.CurrentLocalDirectory = New DirectoryInfo(newDir)
+        Else
+            '' directory not found
             ConsoleHelper.InvokeForColor(Sub()
-                                             SysConsole.WriteLine("Got NO result!")
+                                             SysConsole.Write("The local directory ")
                                          End Sub, ConsoleColor.Yellow)
 
-            Return
+            ConsoleHelper.InvokeForColor(Sub()
+                                             SysConsole.Write(newDir)
+                                         End Sub, ConsoleColor.White)
+
+            ConsoleHelper.InvokeForColor(Sub()
+                                             SysConsole.Write(" was not found!")
+
+                                             SysConsole.WriteLine()
+                                         End Sub, ConsoleColor.Yellow)
         End If
-
-        Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
-                                                 AppServices.DataCulture)
-
-        Select Case code
-            Case 0
-                '' directory exists
-                Me.Mode.CurrentDirectory = newDir
-                Exit Select
-
-            Case 404
-                '' directory not found
-                ConsoleHelper.InvokeForColor(Sub()
-                                                 SysConsole.Write("The directory ")
-                                             End Sub, ConsoleColor.Yellow)
-
-                ConsoleHelper.InvokeForColor(Sub()
-                                                 SysConsole.Write(newDir)
-                                             End Sub, ConsoleColor.White)
-
-                ConsoleHelper.InvokeForColor(Sub()
-                                                 SysConsole.Write(" was not found!")
-
-                                                 SysConsole.WriteLine()
-                                             End Sub, ConsoleColor.Yellow)
-                Exit Select
-        End Select
     End Sub
 
 #End Region

@@ -16,6 +16,7 @@
 
 Imports MarcelJoachimKloubert.TinyCloud.SDK
 Imports SysConsole = System.Console
+Imports SysIoPath = System.IO.Path
 
 ''' <summary>
 ''' A basic action for a <see cref="ConsoleMode" /> instance.
@@ -84,12 +85,44 @@ Public MustInherit Class ConsoleModeActionBase
 
 #End Region
 
-#Region "Methods (3)"
+#Region "Methods (4)"
 
     ''' <summary>
     ''' <see cref="IConsoleModeAction.Execute" />
     ''' </summary>
     Public MustOverride Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String)) Implements IConsoleModeAction.Execute
+
+    ''' <summary>
+    ''' Returns a path as normalized full path.
+    ''' </summary>
+    ''' <param name="path">The path.</param>
+    ''' <returns>The normalized full path.</returns>
+    Protected Function GetFullPath(path As String) As String
+        Dim currentDir As String = If(Me.Mode.CurrentDirectory, String.Empty).Replace("\", "/") _
+                                                                             .Trim()
+
+        While currentDir.EndsWith("/")
+            currentDir = currentDir.Substring(0, currentDir.Length - 1) _
+                                   .Trim()
+        End While
+
+        If Not currentDir.StartsWith("/") Then
+            currentDir = "/" & currentDir
+        End If
+
+        path = If(path, String.Empty).Replace("\", "/") _
+                                     .Trim()
+
+        If String.IsNullOrWhiteSpace(path) Then
+            Return currentDir
+        End If
+
+        If Not SysIoPath.IsPathRooted(path) Then
+            path = SysIoPath.Combine(currentDir, path)
+        End If
+
+        Return path
+    End Function
 
     ''' <summary>
     ''' <see cref="ConsoleMode.ShowException" />

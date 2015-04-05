@@ -44,7 +44,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 
         #endregion Properties (3)
 
-        #region Methods (8)
+        #region Methods (9)
 
         /// <summary>
         /// Creates a new sub directory.
@@ -61,6 +61,11 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         /// <paramref name="name" /> is invalid.
         /// </exception>
         IDirectory CreateDirectory(string name);
+
+        /// <summary>
+        /// Deletes that directory.
+        /// </summary>
+        void Delete();
 
         /// <summary>
         /// Checks if a directory exists.
@@ -126,6 +131,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         /// </exception>
         IFile UploadFile(string name, Stream src, long bytesToRead);
 
-        #endregion Methods (8)
+        #endregion Methods (9)
     }
 }

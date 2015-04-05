@@ -15,6 +15,7 @@
 //  License along with this library.
 
 using System;
+using System.IO;
 
 namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 {
@@ -41,5 +42,20 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
         long? Size { get; }
 
         #endregion Properties (3)
+
+        #region Methods (2)
+
+        /// <summary>
+        /// Deletes that files.
+        /// </summary>
+        void Delete();
+
+        /// <summary>
+        /// Downloads that file.
+        /// </summary>
+        /// <returns>The stream that provides the data of the file for download.</returns>
+        Stream Download();
+
+        #endregion Methods (1)
     }
 }

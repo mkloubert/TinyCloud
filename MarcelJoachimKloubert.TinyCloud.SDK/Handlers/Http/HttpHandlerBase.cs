@@ -14,6 +14,7 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with this library.
 
+using MarcelJoachimKloubert.TinyCloud.SDK.Collections.Concurrency;
 using MarcelJoachimKloubert.TinyCloud.SDK.Helpers;
 using MarcelJoachimKloubert.TinyCloud.SDK.IO;
 using MarcelJoachimKloubert.TinyCloud.SDK.IO.Users;
@@ -40,6 +41,12 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
         #region Fields (1)
 
         private readonly Action<HttpContext> _PROCESS_REQUEST_ACTION;
+
+        /// <summary>
+        /// The suggested name for the application variable with the instance that stores
+        /// the sync objects for all users.
+        /// </summary>
+        public const string APP_VAR_USER_SYNC_COLLECTION = "USER_SYNC_OBJECTS";
 
         #endregion Fields (1)
 
@@ -119,7 +126,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
         #endregion Properties (4)
 
-        #region Methods (9)
+        #region Methods (10)
 
         /// <summary>
         /// Creates an empty, dynamic and exandable object.
@@ -209,6 +216,35 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
             return supportedMethods.OrderBy(x => x, StringComparer.InvariantCultureIgnoreCase)
                                    .ToList();
+        }
+
+        /// <summary>
+        /// Normalizes a path.
+        /// </summary>
+        /// <param name="path">The path to normalize.</param>
+        /// <returns>The normalized path.</returns>
+        protected static string NormalizePath(string path)
+        {
+            path = (path ?? string.Empty).Replace("\\", "/")
+                                         .Trim();
+
+            if (path == string.Empty)
+            {
+                return "/";
+            }
+
+            while (path.EndsWith("/"))
+            {
+                path = path.Substring(0, path.Length - 1)
+                           .Trim();
+            }
+
+            if (path.StartsWith("/") == false)
+            {
+                path = "/" + path;
+            }
+
+            return path;
         }
 
         /// <summary>
@@ -338,8 +374,8 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
 
             try
             {
-                request.AddAppReponseHeader("Version",
-                                            this.GetType().Assembly.GetName().Version);
+                request.AddAppResponseHeader("Version",
+                                             this.GetType().Assembly.GetName().Version);
 
                 if (request.User != null &&
                     request.User.Identity != null &&
@@ -383,7 +419,32 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
                             {
                                 request.StatusCode = HttpStatusCode.OK;
 
-                                this.OnProcessRequest(request);
+                                var actionToInvoke = new Action<HttpHandlerBase, IHttpRequest>((handler, req) =>
+                                    {
+                                        handler.OnProcessRequest(req);
+                                    });
+
+                                var actionState = new
+                                    {
+                                        Action = actionToInvoke,
+                                        Handler = this,
+                                        Request = request,
+                                    };
+
+                                var syncObjs = request.Context
+                                                      .Application[APP_VAR_USER_SYNC_COLLECTION] as UserSyncCollection;
+                                if (syncObjs != null)
+                                {
+                                    syncObjs.Invoke(request,
+                                                    (s) => s.Action(s.Handler,
+                                                                    s.Request),
+                                                    actionState);
+                                }
+                                else
+                                {
+                                    actionState.Action(actionState.Handler,
+                                                       actionState.Request);
+                                }
                             }
                             else
                             {
@@ -415,6 +476,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.Handlers.Http
             }
         }
 
-        #endregion Methods (9)
+        #endregion Methods (10)
     }
 }

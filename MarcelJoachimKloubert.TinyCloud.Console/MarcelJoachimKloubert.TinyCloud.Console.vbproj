@@ -85,13 +85,17 @@
     <Compile Include="Helpers\ConsoleHelper.vb" />
     <Compile Include="Modes\Console\Actions\ConsoleModeActionBase.vb" />
     <Compile Include="Modes\Console\Actions\IConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\ChangeDirLocalConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ChangeDirConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ClsConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\CreateDirectoryConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\ListLocalConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ListConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\HelloConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\RemoveConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\SetConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\TestArgsConsoleModeAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\DownloadFileConsoleAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\UploadFileConsoleAction.vb" />
     <Compile Include="Modes\Console\ConsoleMode.vb" />
     <Compile Include="Modes\IMode.vb" />

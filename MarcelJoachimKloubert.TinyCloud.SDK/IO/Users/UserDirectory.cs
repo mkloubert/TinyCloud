@@ -22,6 +22,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
@@ -170,7 +171,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
         #endregion Properties (7)
 
-        #region Methods (10)
+        #region Methods (11)
 
         /// <inheriteddoc />
         public override string GetInvalidCharsForDirectoryNames()
@@ -227,7 +228,16 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
                 result = null;
             }
 
-            return result ?? new XElement(XML_ELEMENT_DIRECTORY);
+            result = result ?? new XElement(XML_ELEMENT_DIRECTORY);
+
+            var xmlDoc = result.Document;
+            if (xmlDoc == null)
+            {
+                xmlDoc = new XDocument(new XDeclaration("1.0", Encoding.UTF8.WebName, "yes"));
+                xmlDoc.Add(result);
+            }
+
+            return result;
         }
 
         /// <inheriteddoc />
@@ -269,7 +279,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
                 dirsElement.Add(newDirElement);
 
-                this.UpdateMetaXml(xml);
+                this.OnUpdateMetaXml(xml);
             }
             catch
             {
@@ -279,6 +289,30 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             }
 
             return new UserDirectory(this.FileSystem, di, newDirElement, this);
+        }
+
+        /// <inheriteddoc />
+        protected override void OnDelete()
+        {
+            this.LocalDirectory.Refresh();
+            if (this.LocalDirectory.Exists)
+            {
+                this.LocalDirectory.Delete();
+                this.LocalDirectory.Refresh();
+            }
+
+            if (this.Xml != null)
+            {
+                var xmlDoc = this.Xml.Document;
+                this.Xml.Remove();
+
+                var parent = this.Parent as UserDirectory;
+                if (parent != null &&
+                    xmlDoc != null)
+                {
+                    parent.UpdateMetaXml(xmlDoc.Root);
+                }
+            }
         }
 
         /// <inheriteddoc />
@@ -369,6 +403,92 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
                        });
         }
 
+        private void OnUpdateMetaXml(XElement xml)
+        {
+            if (xml == null)
+            {
+                return;
+            }
+
+            var xmlDoc = xml.Document;
+
+            FileInfo metaFile = null;
+            FileInfo metaBackupFileToRestore = null;
+
+            try
+            {
+                metaFile = this.GetMetaFile();
+                if (metaFile.Exists)
+                {
+                    // first create backup
+                    {
+                        var metaBackupFile = this.GetMetaBackupFile();
+                        if (metaBackupFile.Exists)
+                        {
+                            metaBackupFile.Delete();
+                            metaBackupFile.Refresh();
+                        }
+
+                        File.Move(metaFile.FullName, metaBackupFile.FullName);
+                        metaBackupFileToRestore = metaBackupFile;
+                    }
+
+                    // now delete old file
+                    metaFile.Delete();
+                    metaFile.Refresh();
+                }
+
+                // save XML
+                using (var cryptedStream = metaFile.Open(FileMode.CreateNew, FileAccess.ReadWrite))
+                {
+                    using (var compressedStream = new MemoryStream())
+                    {
+                        using (var gzip = new GZipStream(compressedStream, CompressionMode.Compress, true))
+                        {
+                            xmlDoc.Save(gzip);
+
+                            gzip.Flush();
+                            gzip.Close();
+                        }
+
+                        compressedStream.Position = 0;
+                        this.User
+                            .Encrypt(compressedStream, cryptedStream);
+                    }
+                }
+
+                // no need for backup anymore
+                if (metaBackupFileToRestore != null)
+                {
+                    metaBackupFileToRestore.Refresh();
+                    if (metaBackupFileToRestore.Exists)
+                    {
+                        metaBackupFileToRestore.Delete();
+                    }
+                }
+            }
+            catch
+            {
+                // restore backup if avalable
+                // before rethrow exception
+                if (metaBackupFileToRestore != null)
+                {
+                    if (metaFile != null)
+                    {
+                        metaFile.Refresh();
+                        if (metaFile.Exists)
+                        {
+                            metaFile.Delete();
+                        }
+                    }
+
+                    File.Move(metaBackupFileToRestore.FullName, metaFile.FullName);
+                }
+
+                throw;
+            }
+        }
+
         /// <inheriteddoc />
         protected override IFile OnUploadFile(string name, Stream src, long bytesToRead)
         {
@@ -453,26 +573,37 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
                     try
                     {
-                        while (bytesToRead > 0)
+                        using (var gzip = new GZipStream(cs, CompressionMode.Compress, true))
                         {
-                            var bufferSize = 81920L;
-                            if (bufferSize > bytesToRead)
+                            try
                             {
-                                bufferSize = bytesToRead;
+                                while (bytesToRead > 0)
+                                {
+                                    var bufferSize = 81920L;
+                                    if (bufferSize > bytesToRead)
+                                    {
+                                        bufferSize = bytesToRead;
+                                    }
+
+                                    var buffer = new byte[bufferSize];
+
+                                    var bytesReadFromSrc = src.Read(buffer, 0, buffer.Length);
+                                    if (bytesReadFromSrc < 1)
+                                    {
+                                        break;
+                                    }
+
+                                    gzip.Write(buffer, 0, bytesReadFromSrc);
+                                    bytesWritten += bytesReadFromSrc;
+
+                                    bytesToRead -= bytesReadFromSrc;
+                                }
                             }
-
-                            var buffer = new byte[bufferSize];
-
-                            var bytesReadFromSrc = src.Read(buffer, 0, buffer.Length);
-                            if (bytesReadFromSrc < 1)
+                            finally
                             {
-                                break;
+                                gzip.Flush();
+                                gzip.Close();
                             }
-
-                            cs.Write(buffer, 0, bytesReadFromSrc);
-                            bytesWritten += bytesReadFromSrc;
-
-                            bytesToRead -= bytesReadFromSrc;
                         }
                     }
                     finally
@@ -491,7 +622,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
 
                 filesElement.Add(newFileElement);
 
-                this.UpdateMetaXml(xml);
+                this.OnUpdateMetaXml(xml);
             }
             catch
             {
@@ -508,90 +639,14 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO.Users
             return new UserFile(this.FileSystem, fi, newFileElement, this);
         }
 
-        private void UpdateMetaXml(XElement xml)
+        internal void UpdateMetaXml(XElement xml)
         {
-            if (xml == null)
+            lock (this._SYNC)
             {
-                return;
-            }
-
-            FileInfo metaFile = null;
-            FileInfo metaBackupFileToRestore = null;
-
-            try
-            {
-                metaFile = this.GetMetaFile();
-                if (metaFile.Exists)
-                {
-                    // first create backup
-                    {
-                        var metaBackupFile = this.GetMetaBackupFile();
-                        if (metaBackupFile.Exists)
-                        {
-                            metaBackupFile.Delete();
-                            metaBackupFile.Refresh();
-                        }
-
-                        File.Move(metaFile.FullName, metaBackupFile.FullName);
-                        metaBackupFileToRestore = metaBackupFile;
-                    }
-
-                    // now delete old file
-                    metaFile.Delete();
-                    metaFile.Refresh();
-                }
-
-                // save XML
-                using (var cryptedStream = metaFile.Open(FileMode.CreateNew, FileAccess.ReadWrite))
-                {
-                    using (var compressedStream = new MemoryStream())
-                    {
-                        using (var gzip = new GZipStream(compressedStream, CompressionMode.Compress, true))
-                        {
-                            xml.Save(gzip);
-
-                            gzip.Flush();
-                            gzip.Close();
-                        }
-
-                        compressedStream.Position = 0;
-                        this.User
-                            .Encrypt(compressedStream, cryptedStream);
-                    }
-                }
-
-                // no need for backup anymore
-                if (metaBackupFileToRestore != null)
-                {
-                    metaBackupFileToRestore.Refresh();
-                    if (metaBackupFileToRestore.Exists)
-                    {
-                        metaBackupFileToRestore.Delete();
-                    }
-                }
-            }
-            catch
-            {
-                // restore backup if avalable
-                // before rethrow exception
-                if (metaBackupFileToRestore != null)
-                {
-                    if (metaFile != null)
-                    {
-                        metaFile.Refresh();
-                        if (metaFile.Exists)
-                        {
-                            metaFile.Delete();
-                        }
-                    }
-
-                    File.Move(metaBackupFileToRestore.FullName, metaFile.FullName);
-                }
-
-                throw;
+                this.OnUpdateMetaXml(xml);
             }
         }
 
-        #endregion Methods (10)
+        #endregion Methods (11)
     }
 }

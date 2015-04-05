@@ -26,14 +26,15 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
     /// </summary>
     public abstract class DirectoryBase : FileSystemObjectBase, IDirectory
     {
-        #region Fields (4)
+        #region Fields (5)
 
         private readonly Func<string, IDirectory> _CREATE_DIRECTORY_FUNC;
+        private readonly Action _DELETE_ACTION;
         private readonly Func<IEnumerable<IDirectory>> _GET_DIRECTORIES_FUNC;
         private readonly Func<IEnumerable<IFile>> _GET_FILES_FUNC;
         private readonly Func<string, Stream, long, IFile> _UPLOAD_FILE_FUNC;
 
-        #endregion Fields (4)
+        #endregion Fields (5)
 
         #region Constructors (4)
 
@@ -66,6 +67,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             if (this._IS_SYNCHRONIZED)
             {
                 this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory_ThreadSafe;
+                this._DELETE_ACTION = this.OnDelete_ThreadSafe;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories_ThreadSafe;
                 this._GET_FILES_FUNC = this.OnGetFiles_ThreadSafe;
                 this._UPLOAD_FILE_FUNC = this.OnUploadFile_ThreadSafe;
@@ -73,6 +75,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             else
             {
                 this._CREATE_DIRECTORY_FUNC = this.OnCreateDirectory;
+                this._DELETE_ACTION = this.OnDelete;
                 this._GET_DIRECTORIES_FUNC = this.OnGetDirectories;
                 this._GET_FILES_FUNC = this.OnGetFiles;
                 this._UPLOAD_FILE_FUNC = this.OnUploadFile;
@@ -97,7 +100,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
 
         #endregion Properties (3)
 
-        #region Methods (15)
+        #region Methods (18)
 
         /// <inheriteddoc />
         public IDirectory CreateDirectory(string name)
@@ -128,6 +131,27 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             }
 
             return this._CREATE_DIRECTORY_FUNC(name);
+        }
+
+        /// <inheriteddoc />
+        public void Delete()
+        {
+            if (this.IsRoot)
+            {
+                throw new InvalidOperationException("Cannot remove root directory!");
+            }
+
+            if (this.GetDirectories().Any())
+            {
+                throw new InvalidOperationException("The directory still contains sub directories.");
+            }
+
+            if (this.GetFiles().Any())
+            {
+                throw new InvalidOperationException("The directory still contains files.");
+            }
+
+            this._DELETE_ACTION();
         }
 
         /// <inheriteddoc />
@@ -190,6 +214,19 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// The logic for the <see cref="DirectoryBase.Delete()" /> method.
+        /// </summary>
+        protected abstract void OnDelete();
+
+        private void OnDelete_ThreadSafe()
+        {
+            lock (this._SYNC)
+            {
+                this.OnDelete();
+            }
         }
 
         /// <summary>
@@ -296,6 +333,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK.IO
             return this._UPLOAD_FILE_FUNC(name, src, bytesToRead);
         }
 
-        #endregion Methods (15)
+        #endregion Methods (18)
     }
 }

@@ -42,7 +42,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
         /// </summary>
         public const int DEFAULT_PASSWORD_ITERATIONS = 1000;
 
-        #endregion Fields (1)
+        #endregion Fields (2)
 
         #region Properties (2)
 
@@ -64,7 +64,7 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
 
         #endregion Properties (2)
 
-        #region Methods (14)
+        #region Methods (15)
 
         /// <summary>
         /// Returns a value from the app settings.
@@ -307,6 +307,17 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
         }
 
         /// <summary>
+        /// Returns the <see cref="StringComparer" /> instance that compares and sorts general strings.
+        /// </summary>
+        /// <param name="ignoreCase">Ignore case or not.</param>
+        /// <returns>The string comparer and sorter.</returns>
+        public static StringComparer GetStringComparer(bool ignoreCase = true)
+        {
+            return ignoreCase ? StringComparer.InvariantCultureIgnoreCase
+                              : StringComparer.InvariantCulture;
+        }
+
+        /// <summary>
         /// Returns the temp directory.
         /// </summary>
         /// <returns>The temp directory.</returns>
@@ -315,16 +326,6 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
             var path = GetAppSettingValue("TempDirectory");
 
             return new DirectoryInfo(GetFullPath(path));
-        }
-
-        private static bool IsMyAssembly(Assembly asm)
-        {
-            if (asm == null)
-            {
-                return false;
-            }
-
-            return asm.Equals(Assembly.GetExecutingAssembly());
         }
 
         /// <summary>
@@ -380,6 +381,16 @@ namespace MarcelJoachimKloubert.TinyCloud.SDK
             }
         }
 
-        #endregion Methods (12)
+        private static bool IsMyAssembly(Assembly asm)
+        {
+            if (asm == null)
+            {
+                return false;
+            }
+
+            return asm.Equals(Assembly.GetExecutingAssembly());
+        }
+
+        #endregion Methods (15)
     }
 }
