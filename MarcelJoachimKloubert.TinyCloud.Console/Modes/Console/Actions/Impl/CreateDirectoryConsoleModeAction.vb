@@ -70,55 +70,7 @@ Public NotInheritable Class CreateDirectoryConsoleModeAction
             End If
 
             Try
-                Dim newDir As String = a.Trim()
-
-                If Not Path.IsPathRooted(newDir) Then
-                    newDir = Path.Combine(Me.Mode.CurrentDirectory, newDir)
-                End If
-
-                Dim request As WebRequest = conn.CreateApiRequest("create-directory")
-                request.Method = "POST"
-
-                Dim requestData As IDictionary(Of String, Object) = New Dictionary(Of String, Object)()
-                requestData("path") = newDir
-
-                request.SendJson(requestData)
-
-                Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-                If response Is Nothing Then
-                    Return
-                End If
-
-                Dim code As Integer = Convert.ChangeType(response("code"), GetType(Integer), _
-                                                         AppServices.DataCulture)
-
-                Select Case code
-                    Case 0
-                        SysConsole.Write("Directory ")
-
-                        ConsoleHelper.InvokeForColor(Sub()
-                                                         SysConsole.Write(newDir)
-                                                     End Sub, ConsoleColor.White)
-
-                        SysConsole.Write(" was created successfully.")
-                        Exit Select
-
-                    Case 6
-                        ConsoleHelper.InvokeForColor(Sub()
-                                                         SysConsole.Write("Directory ")
-                                                     End Sub, ConsoleColor.Yellow)
-
-                        ConsoleHelper.InvokeForColor(Sub()
-                                                         SysConsole.Write(newDir)
-                                                     End Sub, ConsoleColor.White)
-
-                        ConsoleHelper.InvokeForColor(Sub()
-                                                         SysConsole.Write(" already exists.")
-                                                     End Sub, ConsoleColor.Yellow)
-                        Exit Select
-                End Select
-
-                SysConsole.WriteLine()
+                CloudHelper.CreateDirectory(conn, Me.GetFullPath(a))
             Catch ex As Exception
                 ShowException(ex)
             End Try

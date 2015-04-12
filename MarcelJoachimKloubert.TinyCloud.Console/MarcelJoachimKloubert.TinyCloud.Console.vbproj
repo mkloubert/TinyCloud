@@ -61,6 +61,10 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>_Libs\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Data" />
@@ -82,7 +86,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.vb" />
+    <Compile Include="Helpers\CloudHelper.vb" />
     <Compile Include="Helpers\ConsoleHelper.vb" />
+    <Compile Include="Helpers\FormatHelper.vb" />
     <Compile Include="Modes\Console\Actions\ConsoleModeActionBase.vb" />
     <Compile Include="Modes\Console\Actions\IConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\ChangeDirLocalConsoleModeAction.vb" />
@@ -97,6 +103,7 @@
     <Compile Include="Modes\Console\Actions\Impl\TestArgsConsoleModeAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\DownloadFileConsoleAction.vb" />
     <Compile Include="Modes\Console\Actions\Impl\UploadFileConsoleAction.vb" />
+    <Compile Include="Modes\Console\Actions\Impl\UploadZipConsoleModeAction.vb" />
     <Compile Include="Modes\Console\ConsoleMode.vb" />
     <Compile Include="Modes\IMode.vb" />
     <Compile Include="Modes\ModeBase.vb" />
@@ -166,6 +173,9 @@
       <ProductName>Windows Installer 4.5</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="_Libs\ICSharpCode.SharpZipLib.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

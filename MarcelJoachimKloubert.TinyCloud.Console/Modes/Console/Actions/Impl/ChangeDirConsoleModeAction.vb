@@ -126,7 +126,7 @@ Public NotInheritable Class ChangeDirConsoleModeAction
         Select Case code
             Case 0
                 '' directory exists
-                Me.Mode.CurrentDirectory = newDir
+                Me.Mode.CurrentDirectory = requestData("path")
                 Exit Select
 
             Case 404

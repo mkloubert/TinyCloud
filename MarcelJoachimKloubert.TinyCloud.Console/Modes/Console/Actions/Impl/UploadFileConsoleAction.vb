@@ -64,6 +64,10 @@ Public NotInheritable Class UploadFileConsoleAction
                     Continue For
                 End If
 
+                If Not Path.IsPathRooted(a) Then
+                    a = Path.Combine(Me.Mode.CurrentLocalDirectory.FullName, a)
+                End If
+
                 Dim actionToInvoke As Action(Of CloudConnection, String) = Nothing
 
                 If File.Exists(a) Then
@@ -88,27 +92,25 @@ Public NotInheritable Class UploadFileConsoleAction
     End Sub
 
     Private Sub UploadFile(conn As CloudConnection, path As String)
-        Dim f As FileInfo = New FileInfo(path)
+        Try
+            Dim f As FileInfo = New FileInfo(path)
 
-        Using s As FileStream = f.OpenRead()
-            Dim request As WebRequest = conn.CreateApiRequest("upload-file")
-            request.Method = "POST"
+            SysConsole.WriteLine()
+            SysConsole.Write("Uploading file '")
 
-            request.ContentLength = s.Length
-            request.Headers("X-TinyCloud-Filename") = Me.Mode.CurrentDirectory & "/" & f.Name
+            ConsoleHelper.InvokeForColor(Sub()
+                                             SysConsole.Write("{0}", f.FullName)
+                                         End Sub, ConsoleColor.White)
 
-            Using rs As Stream = request.GetRequestStream()
-                s.CopyTo(rs)
+            SysConsole.Write("'...")
+            SysConsole.WriteLine()
 
-                rs.Flush()
-                rs.Close()
+            Using s As FileStream = f.Open(FileMode.Open, FileAccess.Read, FileShare.Read)
+                CloudHelper.UploadFile(conn, s, Me.Mode.CurrentDirectory & "/" & f.Name)
             End Using
+        Catch ex As Exception
 
-            Dim response As IDictionary(Of String, Object) = request.GetResponse().GetJson()
-            If response IsNot Nothing Then
-
-            End If
-        End Using
+        End Try
     End Sub
 
 #End Region

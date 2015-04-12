@@ -69,7 +69,9 @@ Public NotInheritable Class RemoveConsoleModeAction
     ''' <see cref="ConsoleModeActionBase.Execute" />
     ''' </summary>
     Public Overrides Sub Execute(conn As CloudConnection, cmd As String, args As IList(Of String))
-        For Each a In args.Where(Function(x) Not String.IsNullOrWhiteSpace(x))
+        For Each a In args.Where(Function(x) Not String.IsNullOrWhiteSpace(x)) _
+                          .Select(Function(x) Me.GetFullPath(x))
+
             Try
                 Dim enc As Encoding = AppServices.Charset
 
