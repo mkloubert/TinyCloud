@@ -68,7 +68,7 @@ Public NotInheritable Class UploadFileConsoleAction
                     a = Path.Combine(Me.Mode.CurrentLocalDirectory.FullName, a)
                 End If
 
-                Dim actionToInvoke As Action(Of CloudConnection, String) = Nothing
+                Dim actionToInvoke As Action(Of CloudConnection, String, String) = Nothing
 
                 If File.Exists(a) Then
                     actionToInvoke = AddressOf Me.UploadFile
@@ -79,7 +79,7 @@ Public NotInheritable Class UploadFileConsoleAction
                 End If
 
                 If actionToInvoke IsNot Nothing Then
-                    actionToInvoke(conn, a)
+                    actionToInvoke(conn, a, Me.Mode.CurrentDirectory)
                 End If
             Catch ex As Exception
                 ShowException(ex)
@@ -87,13 +87,32 @@ Public NotInheritable Class UploadFileConsoleAction
         Next
     End Sub
 
-    Private Sub UploadDirectory(conn As CloudConnection, path As String)
+    Private Sub UploadDirectory(conn As CloudConnection, localPath As String, remoteDir As String)
+        Try
+            Dim d As DirectoryInfo = New DirectoryInfo(localPath)
+            If Not d.Exists Then
+                Return
+            End If
 
+            Dim subRemoteDir As String = remoteDir & "/" & d.Name
+
+            CloudHelper.CreateDirectory(conn, subRemoteDir)
+
+            For Each f As FileInfo In d.EnumerateFiles()
+                Me.UploadFile(conn, f.FullName, subRemoteDir)
+            Next
+
+            For Each sd As DirectoryInfo In d.EnumerateDirectories()
+                Me.UploadDirectory(conn, sd.FullName, subRemoteDir)
+            Next
+        Catch ex As Exception
+
+        End Try
     End Sub
 
-    Private Sub UploadFile(conn As CloudConnection, path As String)
+    Private Sub UploadFile(conn As CloudConnection, localPath As String, remoteDir As String)
         Try
-            Dim f As FileInfo = New FileInfo(path)
+            Dim f As FileInfo = New FileInfo(localPath)
 
             SysConsole.WriteLine()
             SysConsole.Write("Uploading file '")
@@ -106,7 +125,7 @@ Public NotInheritable Class UploadFileConsoleAction
             SysConsole.WriteLine()
 
             Using s As FileStream = f.Open(FileMode.Open, FileAccess.Read, FileShare.Read)
-                CloudHelper.UploadFile(conn, s, Me.Mode.CurrentDirectory & "/" & f.Name)
+                CloudHelper.UploadFile(conn, s, remoteDir & "/" & f.Name)
             End Using
         Catch ex As Exception
 
